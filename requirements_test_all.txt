@@ -733,6 +733,9 @@ pymonoprice==0.3
 # homeassistant.components.myq
 pymyq==2.0.5
 
+# homeassistant.components.netgear
+pynetgear==0.7.0
+
 # homeassistant.components.nut
 pynut2==2.1.2
 
