@@ -6,6 +6,7 @@
   "requirements": [
     "pylinky==0.5.0"
   ],
+  "dependencies": ["http"],
   "codeowners": [
     "@Quentame"
   ]
