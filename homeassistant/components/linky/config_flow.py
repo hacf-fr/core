@@ -1,5 +1,6 @@
 """Config flow for Enedis Linky."""
 import logging
+from typing import Optional
 
 from homeassistant import config_entries
 from homeassistant.helpers import config_entry_oauth2_flow
@@ -22,9 +23,14 @@ class LinkyFlowHandler(
         """Return logger."""
         return logging.getLogger(__name__)
 
-    # async def async_step_user(self, user_input=None):
-    #     """Handle a flow start."""
-    #     if self.hass.config_entries.async_entries(DOMAIN):
-    #         return self.async_abort(reason="already_setup")
+    async def async_step_auth(self, user_input: Optional[dict] = None) -> dict:
+        """Create an entry for auth."""
+        # Flow has been triggered by external data
+        if user_input:
+            self.external_data = user_input
+            return self.async_external_step_done(next_step_id="creation")
 
-    #     return await super().async_step_user(user_input)
+        return self.async_external_step(
+            step_id="auth",
+            url="http://www.sud-domotique-expert.fr/enedis/accord_enedis_prod.html",
+        )
