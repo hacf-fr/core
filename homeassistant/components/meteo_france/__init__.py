@@ -54,7 +54,9 @@ async def async_setup(hass: HomeAssistantType, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool:
     """Set up an Meteo-France account from a config entry."""
-    _LOGGER.warning("SETUP")
+    _LOGGER.info(
+        f"Start entities setup for {entry.title} (lat={entry.data[CONF_LATITUDE]}|lon={entry.data[CONF_LONGITUDE]})"
+    )
     hass.data.setdefault(DOMAIN, {})
 
     latitude = entry.data[CONF_LATITUDE]
@@ -104,6 +106,10 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
         if not coordinator_rain.last_update_success:
             raise ConfigEntryNotReady
+    else:
+        _LOGGER.info(
+            f"1 hour rain forecast not available. {entry.title} (lat={entry.data[CONF_LATITUDE]}|lon={entry.data[CONF_LONGITUDE]}) not covered"
+        )
 
     hass.data[DOMAIN][entry.entry_id] = {
         COORDINATOR_FORECAST: coordinator_forecast,
@@ -140,7 +146,9 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
 async def async_unload_entry(hass: HomeAssistantType, entry: ConfigEntry):
     """Unload a config entry."""
-    _LOGGER.warning("UNLOAD")
+    _LOGGER.info(
+        f"Start entities unload for {entry.title} (lat={entry.data[CONF_LATITUDE]}|lon={entry.data[CONF_LONGITUDE]})"
+    )
     unload_ok = all(
         await asyncio.gather(
             *[
