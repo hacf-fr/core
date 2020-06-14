@@ -111,7 +111,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
             raise ConfigEntryNotReady
     else:
         _LOGGER.info(
-            "1 hour rain forecast not available. %s (lat=%s|lon=%s) not covered zone",
+            "1 hour rain forecast not available. %s (lat=%s|lon=%s) is not in covered zone",
             entry.title,
             entry.data[CONF_LATITUDE],
             entry.data[CONF_LONGITUDE],
@@ -123,6 +123,13 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     }
 
     department = coordinator_forecast.data.position.get("dept")
+    _LOGGER.debug(
+        "Department correspondig to %s (lat=%s|lon=%s) is %s",
+        entry.title,
+        entry.data[CONF_LATITUDE],
+        entry.data[CONF_LONGITUDE],
+        department,
+    )
     if department and not hass.data[DOMAIN].get(department):
         coordinator_alert = DataUpdateCoordinator(
             hass,
@@ -141,6 +148,13 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
             COORDINATOR_ALERT_ADDED: False,
             COORDINATOR_ALERT: coordinator_alert,
         }
+    else:
+        _LOGGER.info(
+            "Weather alert not available. %s (lat=%s|lon=%s) is not in a France department or Andorre.",
+            entry.title,
+            entry.data[CONF_LATITUDE],
+            entry.data[CONF_LONGITUDE],
+        )
 
     for platform in PLATFORMS:
         hass.async_create_task(
