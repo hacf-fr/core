@@ -55,22 +55,23 @@ async def async_setup_entry(
             coordinator_alert_data = hass.data[DOMAIN].get(
                 coordinator_forecast.data.position["dept"]
             )
-            if coordinator_alert_data[COORDINATOR_ALERT_ADDED]:
+            if coordinator_alert_data:
+                if coordinator_alert_data[COORDINATOR_ALERT_ADDED]:
+                    _LOGGER.info(
+                        "Weather alert sensor skipped for department n°%s. Already added previously.",
+                        coordinator_forecast.data.position["dept"],
+                    )
+                    continue
+                coordinator_alert_data[COORDINATOR_ALERT_ADDED] = True
+                entities.append(
+                    MeteoFranceAlertSensor(
+                        sensor_type, coordinator_alert_data[COORDINATOR_ALERT]
+                    )
+                )
                 _LOGGER.info(
-                    "Weather alert sensor skipped for department n°%s. Already added previously.",
+                    "Weather alert sensor added for %s.",
                     coordinator_forecast.data.position["dept"],
                 )
-                continue
-            coordinator_alert_data[COORDINATOR_ALERT_ADDED] = True
-            entities.append(
-                MeteoFranceAlertSensor(
-                    sensor_type, coordinator_alert_data[COORDINATOR_ALERT]
-                )
-            )
-            _LOGGER.info(
-                "Weather alert sensor added for %s.",
-                coordinator_forecast.data.position["dept"],
-            )
 
         else:
             entities.append(MeteoFranceSensor(sensor_type, coordinator_forecast))
@@ -111,7 +112,10 @@ class MeteoFranceSensor(Entity):
         """Return the state."""
         path = SENSOR_TYPES[self._type][ENTITY_API_DATA_PATH].split(":")
         data = getattr(self.coordinator.data, path[0])
+
         if path[0] == "probability_forecast":
+            # TODO: return often 'null' with France cities. Need investigation
+            # TODO: "probability_forecast" not always available.
             data = data[0]
 
         if len(path) == 3:
