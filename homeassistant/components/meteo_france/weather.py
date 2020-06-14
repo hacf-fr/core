@@ -45,6 +45,11 @@ async def async_setup_entry(
     async_add_entities(
         [MeteoFranceWeather(coordinator, entry.options.get(CONF_MODE))], True
     )
+    _LOGGER.info(
+        "Weather entity (%s) added for %s.",
+        entry.options.get(CONF_MODE),
+        coordinator.data.position["name"],
+    )
 
 
 class MeteoFranceWeather(WeatherEntity):

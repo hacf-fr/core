@@ -47,7 +47,8 @@ async def async_setup_entry(
             if coordinator_rain:
                 entities.append(MeteoFranceRainSensor(sensor_type, coordinator_rain))
                 _LOGGER.info(
-                    f"Next rain sensor added for {coordinator_forecast.data.position['name']}."
+                    "Next rain sensor added for %s.",
+                    coordinator_forecast.data.position["name"],
                 )
 
         elif sensor_type == "weather_alert":
@@ -56,7 +57,8 @@ async def async_setup_entry(
             )
             if coordinator_alert_data[COORDINATOR_ALERT_ADDED]:
                 _LOGGER.info(
-                    f"Weather alert sensor skipped for {coordinator_forecast.data.position['dept']}. Already added."
+                    "Weather alert sensor skipped for department n°%s. Already added previously.",
+                    coordinator_forecast.data.position["dept"],
                 )
                 continue
             coordinator_alert_data[COORDINATOR_ALERT_ADDED] = True
@@ -66,13 +68,16 @@ async def async_setup_entry(
                 )
             )
             _LOGGER.info(
-                f"Weather alert sensor added for {coordinator_forecast.data.position['dept']}."
+                "Weather alert sensor added for %s.",
+                coordinator_forecast.data.position["dept"],
             )
 
         else:
             entities.append(MeteoFranceSensor(sensor_type, coordinator_forecast))
             _LOGGER.info(
-                f"Sensor {sensor_type} added for {coordinator_forecast.data.position['name']}."
+                "Sensor %s added for %s.",
+                sensor_type,
+                coordinator_forecast.data.position["name"],
             )
 
     async_add_entities(
