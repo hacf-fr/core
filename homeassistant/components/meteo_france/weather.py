@@ -1,5 +1,5 @@
 """Support for Meteo-France weather service."""
-from datetime import datetime
+import time
 import logging
 
 from homeassistant.components.weather import (
@@ -116,11 +116,13 @@ class MeteoFranceWeather(WeatherEntity):
         forecast_data = []
 
         if self._mode == FORECAST_MODE_HOURLY:
-            today = datetime.now().timestamp()
+            today = time.time()
             for forecast in self.coordinator.data.forecast:
-                # Can have data of yesterday
+                # Can have data in the past
                 if forecast["dt"] < today:
-                    _LOGGER.debug("remove_forecast %s %s", self._mode, forecast)
+                    _LOGGER.debug(
+                        "remove forecast in the past: %s %s", self._mode, forecast
+                    )
                     continue
                 forecast_data.append(
                     {
@@ -139,12 +141,12 @@ class MeteoFranceWeather(WeatherEntity):
                     }
                 )
         else:
-            today = datetime.utcnow().timestamp()
+            # today = datetime.utcnow().timestamp()
             for forecast in self.coordinator.data.daily_forecast:
                 # Can have data of yesterday
-                if forecast["dt"] < today:
-                    _LOGGER.debug("remove_forecast %s %s", self._mode, forecast)
-                    continue
+                # if forecast["dt"] < today:
+                #     _LOGGER.debug("remove_forecast %s %s", self._mode, forecast)
+                #     continue
                 # stop when we don't have a weather condition (can happen around last days of forcast, max 14)
                 if not forecast.get("weather12H"):
                     break
