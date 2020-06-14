@@ -69,12 +69,14 @@ class MeteoFranceWeather(WeatherEntity):
     @property
     def condition(self):
         """Return the current condition."""
-        return format_condition(self.coordinator.data.forecast[2]["weather"]["desc"])
+        return format_condition(
+            self.coordinator.data.current_forecast["weather"]["desc"]
+        )
 
     @property
     def temperature(self):
         """Return the temperature."""
-        return self.coordinator.data.forecast[2]["T"]["value"]
+        return self.coordinator.data.current_forecast["T"]["value"]
 
     @property
     def temperature_unit(self):
@@ -84,22 +86,22 @@ class MeteoFranceWeather(WeatherEntity):
     @property
     def pressure(self):
         """Return the pressure."""
-        return self.coordinator.data.forecast[2]["sea_level"]
+        return self.coordinator.data.current_forecast["sea_level"]
 
     @property
     def humidity(self):
         """Return the humidity."""
-        return self.coordinator.data.forecast[2]["humidity"]
+        return self.coordinator.data.current_forecast["humidity"]
 
     @property
     def wind_speed(self):
         """Return the wind speed."""
-        return self.coordinator.data.forecast[2]["wind"]["speed"]
+        return self.coordinator.data.current_forecast["wind"]["speed"]
 
     @property
     def wind_bearing(self):
         """Return the wind bearing."""
-        wind_bearing = self.coordinator.data.forecast[2]["wind"]["direction"]
+        wind_bearing = self.coordinator.data.current_forecast["wind"]["direction"]
         if wind_bearing != -1:
             return wind_bearing
 
