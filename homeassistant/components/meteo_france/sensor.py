@@ -94,11 +94,12 @@ class MeteoFranceSensor(Entity):
         self.coordinator = coordinator
         city_name = self.coordinator.data.position["name"]
         self._name = f"{city_name} {SENSOR_TYPES[self._type][ENTITY_NAME]}"
+        self._unique_id = f"{self.coordinator.data.position['lat']}/{self.coordinator.data.position['lon']}-{SENSOR_TYPES[self._type][ENTITY_NAME]}"
 
     @property
     def unique_id(self):
         """Return the unique id."""
-        return self._name
+        return self._unique_id
 
     @property
     def name(self):
@@ -215,6 +216,7 @@ class MeteoFranceAlertSensor(MeteoFranceSensor):
         self.coordinator = coordinator
         dept_code = self.coordinator.data.domain_id
         self._name = f"{dept_code} {SENSOR_TYPES[self._type][ENTITY_NAME]}"
+        self._unique_id = self._name
 
     @property
     def state(self):
