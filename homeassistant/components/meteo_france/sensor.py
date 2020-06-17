@@ -119,8 +119,14 @@ class MeteoFranceSensor(Entity):
             data = data[0]
 
         if len(path) == 3:
-            return data[path[1]][path[2]]
-        return data[path[1]]
+            value = data[path[1]][path[2]]
+        value = data[path[1]]
+
+        # Add unit conversion for wind speed. API is in m/s
+        if self._type == "wind_speed":
+            # convesion in km/h
+            value = round(value * 3.6)
+        return value
 
     @property
     def unit_of_measurement(self):

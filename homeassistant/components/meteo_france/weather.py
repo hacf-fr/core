@@ -102,7 +102,8 @@ class MeteoFranceWeather(WeatherEntity):
     @property
     def wind_speed(self):
         """Return the wind speed."""
-        return self.coordinator.data.current_forecast["wind"]["speed"]
+        # convert m/s from API in km/h
+        return round(self.coordinator.data.current_forecast["wind"]["speed"] * 3.6)
 
     @property
     def wind_bearing(self):
