@@ -23,6 +23,7 @@ from .const import (
     COORDINATOR_FORECAST,
     DOMAIN,
     FORECAST_MODE_HOURLY,
+    FORECAST_MODE_DAILY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -43,11 +44,16 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][entry.entry_id][COORDINATOR_FORECAST]
 
     async_add_entities(
-        [MeteoFranceWeather(coordinator, entry.options.get(CONF_MODE))], True
+        [
+            MeteoFranceWeather(
+                coordinator, entry.options.get(CONF_MODE, FORECAST_MODE_DAILY),
+            )
+        ],
+        True,
     )
     _LOGGER.info(
         "Weather entity (%s) added for %s.",
-        entry.options.get(CONF_MODE),
+        entry.options.get(CONF_MODE, FORECAST_MODE_DAILY),
         coordinator.data.position["name"],
     )
 
