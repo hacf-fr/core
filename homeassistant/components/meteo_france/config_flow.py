@@ -82,9 +82,7 @@ class MeteoFranceFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if places and len(places) > 1 and self.source != SOURCE_IMPORT:
             places_for_form = {}
             for place in places:
-                places_for_form[
-                    _build_place_key(place)
-                ] = f"{place.name} - {place.admin} - {place.country}"
+                places_for_form[_build_place_key(place)] = f"{place}"
             _LOGGER.debug(places_for_form)
 
             return await self._show_cities_form(places_for_form)
