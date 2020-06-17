@@ -83,7 +83,6 @@ class MeteoFranceFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             places_for_form = {}
             for place in places:
                 places_for_form[_build_place_key(place)] = f"{place}"
-            _LOGGER.debug(places_for_form)
 
             return await self._show_cities_form(places_for_form)
         if places and not user_input:

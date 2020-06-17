@@ -58,7 +58,7 @@ async def async_setup_entry(
             if coordinator_alert_data:
                 if coordinator_alert_data[COORDINATOR_ALERT_ADDED]:
                     _LOGGER.info(
-                        "Weather alert sensor skipped for department n°%s. Already added previously.",
+                        "Weather alert sensor skipped for department n°%s: already added.",
                         coordinator_forecast.data.position["dept"],
                     )
                     continue
@@ -95,7 +95,7 @@ class MeteoFranceSensor(Entity):
         self.coordinator = coordinator
         city_name = self.coordinator.data.position["name"]
         self._name = f"{city_name} {SENSOR_TYPES[self._type][ENTITY_NAME]}"
-        self._unique_id = f"{self.coordinator.data.position['lat']}/{self.coordinator.data.position['lon']}-{SENSOR_TYPES[self._type][ENTITY_NAME]}"
+        self._unique_id = f"{self.coordinator.data.position['lat']},{self.coordinator.data.position['lon']}_{self._type}"
 
     @property
     def unique_id(self):
@@ -122,9 +122,8 @@ class MeteoFranceSensor(Entity):
             value = data[path[1]][path[2]]
         value = data[path[1]]
 
-        # Add unit conversion for wind speed. API is in m/s
         if self._type == "wind_speed":
-            # convesion in km/h
+            # convert API wind speed from m/s to km/h
             value = round(value * 3.6)
         return value
 

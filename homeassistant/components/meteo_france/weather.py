@@ -66,7 +66,7 @@ class MeteoFranceWeather(WeatherEntity):
         self.coordinator = coordinator
         self._city_name = self.coordinator.data.position["name"]
         self._mode = mode
-        self._unique_id = f"{self.coordinator.data.position['lat']}/{self.coordinator.data.position['lon']}-weather-{mode}"
+        self._unique_id = f"{self.coordinator.data.position['lat']}/{self.coordinator.data.position['lon']}-weather"
 
     @property
     def unique_id(self):
@@ -108,7 +108,7 @@ class MeteoFranceWeather(WeatherEntity):
     @property
     def wind_speed(self):
         """Return the wind speed."""
-        # convert m/s from API in km/h
+        # convert from API m/s to km/h
         return round(self.coordinator.data.current_forecast["wind"]["speed"] * 3.6)
 
     @property
@@ -149,12 +149,8 @@ class MeteoFranceWeather(WeatherEntity):
                     }
                 )
         else:
-            # today = datetime.utcnow().timestamp()
             for forecast in self.coordinator.data.daily_forecast:
                 # Can have data of yesterday
-                # if forecast["dt"] < today:
-                #     _LOGGER.debug("remove_forecast %s %s", self._mode, forecast)
-                #     continue
                 # stop when we don't have a weather condition (can happen around last days of forcast, max 14)
                 if not forecast.get("weather12H"):
                     break
