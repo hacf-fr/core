@@ -66,7 +66,7 @@ class MeteoFranceWeather(WeatherEntity):
         self.coordinator = coordinator
         self._city_name = self.coordinator.data.position["name"]
         self._mode = mode
-        self._unique_id = f"{self.coordinator.data.position['lat']}/{self.coordinator.data.position['lon']}-weather"
+        self._unique_id = f"{self.coordinator.data.position['lat']},{self.coordinator.data.position['lon']}"
 
     @property
     def unique_id(self):
