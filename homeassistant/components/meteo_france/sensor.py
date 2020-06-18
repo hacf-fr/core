@@ -58,8 +58,9 @@ async def async_setup_entry(
             if coordinator_alert_data:
                 if coordinator_alert_data[COORDINATOR_ALERT_ADDED]:
                     _LOGGER.info(
-                        "Weather alert sensor skipped for department n°%s: already added.",
+                        "Weather alert sensor for department n°%s skipped within %s: already added with another city",
                         coordinator_forecast.data.position["dept"],
+                        coordinator_forecast.data.position["name"],
                     )
                     continue
                 coordinator_alert_data[COORDINATOR_ALERT_ADDED] = True
@@ -69,8 +70,9 @@ async def async_setup_entry(
                     )
                 )
                 _LOGGER.debug(
-                    "Weather alert sensor added for %s.",
+                    "Weather alert sensor for department n°%s added with %s.",
                     coordinator_forecast.data.position["dept"],
+                    coordinator_forecast.data.position["name"],
                 )
 
         else:
@@ -225,6 +227,7 @@ class MeteoFranceAlertSensor(MeteoFranceSensor):
         self.coordinator = coordinator
         dept_code = self.coordinator.data.domain_id
         self._name = f"{dept_code} {SENSOR_TYPES[self._type][ENTITY_NAME]}"
+        self._unique_id = self._name
 
     @property
     def state(self):
