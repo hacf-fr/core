@@ -225,7 +225,6 @@ class MeteoFranceAlertSensor(MeteoFranceSensor):
         self.coordinator = coordinator
         dept_code = self.coordinator.data.domain_id
         self._name = f"{dept_code} {SENSOR_TYPES[self._type][ENTITY_NAME]}"
-        self._unique_id = self._name
 
     @property
     def state(self):
@@ -241,14 +240,3 @@ class MeteoFranceAlertSensor(MeteoFranceSensor):
             **readeable_phenomenoms_dict(self.coordinator.data.phenomenons_max_colors),
             ATTR_ATTRIBUTION: ATTRIBUTION,
         }
-
-    async def async_will_remove_from_hass(self):
-        """Unsubscribe from needed data on remove."""
-        await super().async_will_remove_from_hass()
-
-        self.coordinator.hass.data[DOMAIN][self._dept_code][
-            COORDINATOR_ALERT_ADDED
-        ] = False
-        _LOGGER.debug(
-            "Weather entity unloaded for department n°%s", self._dept_code,
-        )
