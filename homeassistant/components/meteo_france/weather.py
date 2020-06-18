@@ -51,7 +51,7 @@ async def async_setup_entry(
         ],
         True,
     )
-    _LOGGER.info(
+    _LOGGER.debug(
         "Weather entity (%s) added for %s.",
         entry.options.get(CONF_MODE, FORECAST_MODE_DAILY),
         coordinator.data.position["name"],

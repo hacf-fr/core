@@ -46,7 +46,7 @@ async def async_setup_entry(
         if sensor_type == "next_rain":
             if coordinator_rain:
                 entities.append(MeteoFranceRainSensor(sensor_type, coordinator_rain))
-                _LOGGER.info(
+                _LOGGER.debug(
                     "Next rain sensor added for %s.",
                     coordinator_forecast.data.position["name"],
                 )
@@ -68,14 +68,14 @@ async def async_setup_entry(
                         sensor_type, coordinator_alert_data[COORDINATOR_ALERT]
                     )
                 )
-                _LOGGER.info(
+                _LOGGER.debug(
                     "Weather alert sensor added for %s.",
                     coordinator_forecast.data.position["dept"],
                 )
 
         else:
             entities.append(MeteoFranceSensor(sensor_type, coordinator_forecast))
-            _LOGGER.info(
+            _LOGGER.debug(
                 "Sensor %s added for %s.",
                 sensor_type,
                 coordinator_forecast.data.position["name"],
