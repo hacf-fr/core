@@ -18,7 +18,6 @@ from .const import (
     ATTR_NEXT_RAIN_SUMMARY,
     ATTRIBUTION,
     COORDINATOR_ALERT,
-    COORDINATOR_ALERT_ADDED,
     COORDINATOR_FORECAST,
     COORDINATOR_RAIN,
     DOMAIN,
@@ -40,6 +39,7 @@ async def async_setup_entry(
     """Set up the Meteo-France sensor platform."""
     coordinator_forecast = hass.data[DOMAIN][entry.entry_id][COORDINATOR_FORECAST]
     coordinator_rain = hass.data[DOMAIN][entry.entry_id][COORDINATOR_RAIN]
+    coordinator_alert = hass.data[DOMAIN][entry.entry_id][COORDINATOR_ALERT]
 
     entities = []
     for sensor_type in SENSOR_TYPES:
@@ -52,25 +52,19 @@ async def async_setup_entry(
                 )
 
         elif sensor_type == "weather_alert":
-            coordinator_alert_data = hass.data[DOMAIN].get(
-                coordinator_forecast.data.position["dept"]
-            )
-            if coordinator_alert_data:
-                if coordinator_alert_data[COORDINATOR_ALERT_ADDED]:
-                    _LOGGER.info(
-                        "Weather alert sensor for department n°%s skipped within %s: already added with another city",
-                        coordinator_forecast.data.position["dept"],
-                        coordinator_forecast.data.position["name"],
-                    )
-                    continue
-                coordinator_alert_data[COORDINATOR_ALERT_ADDED] = True
-                entities.append(
-                    MeteoFranceAlertSensor(
-                        sensor_type, coordinator_alert_data[COORDINATOR_ALERT]
-                    )
-                )
+            department = coordinator_forecast.data.position["dept"]
+            coordinator_alert_added = hass.data[DOMAIN].get(department)
+            if coordinator_alert_added is False:
+                hass.data[DOMAIN][department] = True
+                entities.append(MeteoFranceAlertSensor(sensor_type, coordinator_alert))
                 _LOGGER.debug(
                     "Weather alert sensor for department n°%s added with %s.",
+                    coordinator_forecast.data.position["dept"],
+                    coordinator_forecast.data.position["name"],
+                )
+            else:
+                _LOGGER.info(
+                    "Weather alert sensor for department n°%s skipped within %s: already added with another city",
                     coordinator_forecast.data.position["dept"],
                     coordinator_forecast.data.position["name"],
                 )
