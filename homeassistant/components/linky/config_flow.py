@@ -23,6 +23,10 @@ class LinkyFlowHandler(
         """Return logger."""
         return logging.getLogger(__name__)
 
+    async def async_step_user(self, user_input: Optional[dict] = None) -> dict:
+        """Go to the auth step."""
+        return await self.async_step_auth()
+
     async def async_step_auth(self, user_input: Optional[dict] = None) -> dict:
         """Create an entry for auth."""
         # Flow has been triggered by external data
