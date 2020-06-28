@@ -1,5 +1,5 @@
 """Tests for the Meteo-France config flow."""
-from meteofrance.client import meteofranceError
+from meteofrance.exceptions import MeteoFranceException
 import pytest
 
 from homeassistant import data_entry_flow
@@ -129,7 +129,7 @@ async def test_client_failed(hass):
     """Test when we have errors during client fetch."""
     with patch(
         "homeassistant.components.meteo_france.config_flow.meteofranceClient",
-        side_effect=meteofranceError(),
+        side_effect=MeteoFranceException(),
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}, data={CONF_CITY: CITY_1_POSTAL},
