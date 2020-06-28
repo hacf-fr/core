@@ -20,7 +20,7 @@ CITY_2_NAME = "Lyon"
 def mock_controller_client_1():
     """Mock a successful client."""
     with patch(
-        "homeassistant.components.meteo_france.config_flow.meteofranceClient",
+        "homeassistant.components.meteo_france.config_flow.MeteoFranceClient",
         update=False,
     ) as service_mock:
         service_mock.return_value.get_data.return_value = {"name": CITY_1_NAME}
@@ -42,7 +42,7 @@ def mock_setup():
 def mock_controller_client_2():
     """Mock a successful client."""
     with patch(
-        "homeassistant.components.meteo_france.config_flow.meteofranceClient",
+        "homeassistant.components.meteo_france.config_flow.MeteoFranceClient",
         update=False,
     ) as service_mock:
         service_mock.return_value.get_data.return_value = {"name": CITY_2_NAME}
@@ -128,7 +128,7 @@ async def test_abort_if_already_setup_district(hass, client_2):
 async def test_client_failed(hass):
     """Test when we have errors during client fetch."""
     with patch(
-        "homeassistant.components.meteo_france.config_flow.meteofranceClient",
+        "homeassistant.components.meteo_france.config_flow.MeteoFranceClient",
         side_effect=MeteoFranceException(),
     ):
         result = await hass.config_entries.flow.async_init(
