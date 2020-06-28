@@ -133,7 +133,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
             if not coordinator_alert.last_update_success:
                 raise ConfigEntryNotReady
 
-            hass.data[DOMAIN][department] = False
+            hass.data[DOMAIN][department] = True
         else:
             _LOGGER.info(
                 "Weather alert for departmen n°%s won't be added with city %s as it has already been added whitin another city",

@@ -51,23 +51,13 @@ async def async_setup_entry(
                     coordinator_forecast.data.position["name"],
                 )
 
-        elif sensor_type == "weather_alert":
-            department = coordinator_forecast.data.position["dept"]
-            coordinator_alert_added = hass.data[DOMAIN].get(department)
-            if coordinator_alert_added is False:
-                hass.data[DOMAIN][department] = True
-                entities.append(MeteoFranceAlertSensor(sensor_type, coordinator_alert))
-                _LOGGER.debug(
-                    "Weather alert sensor for department n°%s added with %s.",
-                    coordinator_forecast.data.position["dept"],
-                    coordinator_forecast.data.position["name"],
-                )
-            else:
-                _LOGGER.info(
-                    "Weather alert sensor for department n°%s skipped within %s: already added with another city",
-                    coordinator_forecast.data.position["dept"],
-                    coordinator_forecast.data.position["name"],
-                )
+        elif sensor_type == "weather_alert" and coordinator_alert:
+            entities.append(MeteoFranceAlertSensor(sensor_type, coordinator_alert))
+            _LOGGER.debug(
+                "Weather alert sensor for department n°%s added with %s.",
+                coordinator_forecast.data.position["dept"],
+                coordinator_forecast.data.position["name"],
+            )
 
         else:
             entities.append(MeteoFranceSensor(sensor_type, coordinator_forecast))
