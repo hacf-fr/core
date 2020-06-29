@@ -5,12 +5,15 @@ import pytest
 from homeassistant import data_entry_flow
 from homeassistant.components.meteo_france.const import CONF_CITY, DOMAIN
 from homeassistant.config_entries import SOURCE_IMPORT, SOURCE_USER
+from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE
 
 from tests.async_mock import patch
 from tests.common import MockConfigEntry
 
 CITY_1_POSTAL = "74220"
 CITY_1_NAME = "La Clusaz"
+CITY_1_LAT = 45.90417
+CITY_1_LON = 6.42306
 CITY_2_POSTAL_DISTRICT_1 = "69001"
 CITY_2_POSTAL_DISTRICT_4 = "69004"
 CITY_2_NAME = "Lyon"
@@ -59,12 +62,19 @@ async def test_user(hass, client_1):
 
     # test with all provided
     result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_USER}, data={CONF_CITY: CITY_1_POSTAL},
+        DOMAIN,
+        context={"source": SOURCE_USER},
+        data={
+            CONF_CITY: CITY_1_POSTAL,
+            CONF_LATITUDE: CITY_1_LAT,
+            CONF_LONGITUDE: CITY_1_LON,
+        },
     )
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["result"].unique_id == CITY_1_NAME
-    assert result["title"] == CITY_1_NAME
-    assert result["data"][CONF_CITY] == CITY_1_POSTAL
+    assert result["result"].unique_id == f"{CITY_1_LAT}, {CITY_1_LON}"
+    assert result["title"] == CITY_1_POSTAL
+    assert result["data"][CONF_LATITUDE] == CITY_1_LAT
+    assert result["data"][CONF_LONGITUDE] == CITY_1_LON
 
 
 async def test_import(hass, client_1):
