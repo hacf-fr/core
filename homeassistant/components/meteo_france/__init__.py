@@ -164,16 +164,14 @@ async def async_unload_entry(hass: HomeAssistantType, entry: ConfigEntry):
     """Unload a config entry."""
     _LOGGER.debug("Unload %s", entry.title)
     if hass.data[DOMAIN][entry.entry_id][COORDINATOR_ALERT]:
-        hass.data[DOMAIN][
-            hass.data[DOMAIN][entry.entry_id][COORDINATOR_FORECAST].data.position.get(
-                "dept"
-            )
-        ] = False
+
+        department = hass.data[DOMAIN][entry.entry_id][
+            COORDINATOR_FORECAST
+        ].data.position.get("dept")
+        hass.data[DOMAIN][department] = False
         _LOGGER.debug(
             "Weather alert for depatment n° %s unloaded and released. It can be added now by another city.",
-            hass.data[DOMAIN][entry.entry_id][COORDINATOR_FORECAST].data.position.get(
-                "dept"
-            ),
+            department,
         )
 
     unload_ok = all(
