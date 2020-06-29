@@ -1,9 +1,12 @@
 """Config flow for Enedis Linky."""
 import logging
 from typing import Optional
+from urllib.parse import urlencode
 
 from homeassistant import config_entries
 from homeassistant.helpers import config_entry_oauth2_flow
+from homeassistant.helpers.config_entry_oauth2_flow import AUTH_CALLBACK_PATH
+from homeassistant.helpers.network import get_url
 
 from .const import DOMAIN
 
@@ -34,7 +37,15 @@ class LinkyFlowHandler(
             self.external_data = user_input
             return self.async_external_step_done(next_step_id="creation")
 
+        params = urlencode(
+            {
+                "flow_id": self.flow_id,
+                "redirect_uri": f"{get_url(self.hass)}{AUTH_CALLBACK_PATH}",
+                "box": "HA",
+            }
+        )
+
         return self.async_external_step(
             step_id="auth",
-            url="http://www.sud-domotique-expert.fr/enedis/accord_enedis_prod.html",
+            url=f"http://www.sud-domotique-expert.fr/enedis/accord_enedis_prod.html?{params}",
         )
