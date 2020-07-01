@@ -138,12 +138,16 @@ async def test_import(hass, client_1):
     """Test import step."""
     # import with all
     result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_IMPORT}, data={CONF_CITY: CITY_1_POSTAL},
+        DOMAIN, context={"source": SOURCE_IMPORT}, data={CONF_CITY: CITY_1_NAME},
     )
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["result"].unique_id == CITY_1_NAME
-    assert result["title"] == CITY_1_NAME
-    assert result["data"][CONF_CITY] == CITY_1_POSTAL
+    assert result["result"].unique_id == f"{CITY_1_LAT}, {CITY_1_LON}"
+    assert (
+        result["title"]
+        == f"{CITY_1_NAME} - {CITY_1_ADMIN} ({CITY_1_ADMIN2}) - {CITY_1_COUNTRY}"
+    )
+    assert result["data"][CONF_LATITUDE] == str(CITY_1_LAT)
+    assert result["data"][CONF_LONGITUDE] == str(CITY_1_LON)
 
 
 async def test_abort_if_already_setup(hass, client_1):
