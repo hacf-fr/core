@@ -19,9 +19,23 @@ CITY_1_COUNTRY = "FR"
 CITY_1_ADMIN = "Rhône-Alpes"
 CITY_1_ADMIN2 = "74"
 
-CITY_2_POSTAL_DISTRICT_1 = "69001"
-CITY_2_POSTAL_DISTRICT_4 = "69004"
-CITY_2_NAME = "Lyon"
+CITY_2_NAME = "Auch"
+CITY_2_LAT = 43.64528
+CITY_2_LON = 0.58861
+CITY_2_COUNTRY = "FR"
+CITY_2_ADMIN = "Midi-Pyrénées"
+CITY_2_ADMIN2 = "32"
+
+CITY_3_NAME = "Auchel"
+CITY_3_LAT = 50.50833
+CITY_3_LON = 2.47361
+CITY_3_COUNTRY = "FR"
+CITY_3_ADMIN = "Nord-Pas-de-Calais"
+CITY_3_ADMIN2 = "62"
+
+CITY_2_POSTAL_DISTRICT_1 = "TO BE REMOVED"
+CITY_2_POSTAL_DISTRICT_4 = "TO BE REMOVED"
+CITY_2_POSTAL_DISTRICT_4 = "TO BE REMOVED"
 
 
 @pytest.fixture(name="client_1")
@@ -63,7 +77,27 @@ def mock_controller_client_2():
         "homeassistant.components.meteo_france.config_flow.MeteoFranceClient",
         update=False,
     ) as service_mock:
-        service_mock.return_value.get_data.return_value = {"name": CITY_2_NAME}
+        city_2 = Place(
+            {
+                "name": CITY_2_NAME,
+                "lat": CITY_2_LAT,
+                "lon": CITY_2_LON,
+                "country": CITY_2_COUNTRY,
+                "admin": CITY_2_ADMIN,
+                "admin2": CITY_2_ADMIN2,
+            }
+        )
+        city_3 = Place(
+            {
+                "name": CITY_3_NAME,
+                "lat": CITY_3_LAT,
+                "lon": CITY_3_LON,
+                "country": CITY_3_COUNTRY,
+                "admin": CITY_3_ADMIN,
+                "admin2": CITY_3_ADMIN2,
+            }
+        )
+        service_mock.return_value.search_places.return_value = [city_2, city_3]
         yield service_mock
 
 
@@ -89,6 +123,17 @@ async def test_user(hass, client_1):
     assert result["data"][CONF_LONGITUDE] == str(CITY_1_LON)
 
 
+async def test_user_list(hass, client_2):
+    """Test user config."""
+
+    # test with all provided with search returning more than 1 place
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}, data={CONF_CITY: CITY_2_NAME},
+    )
+    assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
+    assert result["step_id"] == "cities"
+
+
 async def test_import(hass, client_1):
     """Test import step."""
     # import with all
@@ -104,7 +149,9 @@ async def test_import(hass, client_1):
 async def test_abort_if_already_setup(hass, client_1):
     """Test we abort if already setup."""
     MockConfigEntry(
-        domain=DOMAIN, data={CONF_CITY: CITY_1_POSTAL}, unique_id=CITY_1_NAME
+        domain=DOMAIN,
+        data={CONF_LATITUDE: CITY_1_LAT, CONF_LONGITUDE: CITY_1_LON},
+        unique_id=f"{CITY_1_LAT}, {CITY_1_LON}",
     ).add_to_hass(hass)
 
     # Should fail, same CITY same postal code (import)
