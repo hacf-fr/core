@@ -173,31 +173,6 @@ async def test_abort_if_already_setup(hass, client_1):
     assert result["reason"] == "already_configured"
 
 
-async def test_abort_if_already_setup_district(hass, client_2):
-    """Test we abort if already setup."""
-    MockConfigEntry(
-        domain=DOMAIN, data={CONF_CITY: CITY_2_POSTAL_DISTRICT_1}, unique_id=CITY_2_NAME
-    ).add_to_hass(hass)
-
-    # Should fail, same CITY different postal code (import)
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": SOURCE_IMPORT},
-        data={CONF_CITY: CITY_2_POSTAL_DISTRICT_4},
-    )
-    assert result["type"] == data_entry_flow.RESULT_TYPE_ABORT
-    assert result["reason"] == "already_configured"
-
-    # Should fail, same CITY different postal code (flow)
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={"source": SOURCE_USER},
-        data={CONF_CITY: CITY_2_POSTAL_DISTRICT_4},
-    )
-    assert result["type"] == data_entry_flow.RESULT_TYPE_ABORT
-    assert result["reason"] == "already_configured"
-
-
 async def test_client_failed(hass):
     """Test when we have errors during client fetch."""
     with patch(
