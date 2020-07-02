@@ -53,9 +53,9 @@ class MeteoFranceFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         latitude = user_input.get(CONF_LATITUDE)
         longitude = user_input.get(CONF_LONGITUDE)
 
-        client = MeteoFranceClient()
-
         try:
+            client = MeteoFranceClient()
+
             if not latitude:
                 places = await self.hass.async_add_executor_job(
                     client.search_places, city
