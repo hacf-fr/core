@@ -8,6 +8,7 @@ from homeassistant import config_entries
 from homeassistant.config_entries import SOURCE_IMPORT
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_MODE
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import AbortFlow
 
 from .const import CONF_CITY, FORECAST_MODE, FORECAST_MODE_DAILY
 from .const import DOMAIN  # pylint: disable=unused-import
@@ -61,6 +62,9 @@ class MeteoFranceFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 )
                 _LOGGER.debug("places search result: %s", places)
                 return await self.async_step_cities(places=places)
+        except AbortFlow as exp:
+            _LOGGER.error(exp)
+            return self.async_abort(reason="already_configured")
         except Exception as exp:  # pylint: disable=broad-except
             _LOGGER.error(exp)
             return self.async_abort(reason="unknown")
