@@ -128,6 +128,21 @@ async def test_user_list(hass, client_multiple):
     assert result["type"] == data_entry_flow.RESULT_TYPE_FORM
     assert result["step_id"] == "cities"
 
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            CONF_CITY: f"{CITY_2_NAME} - {CITY_2_ADMIN} ({CITY_2_ADMIN2}) - {CITY_2_COUNTRY};{CITY_2_LAT};{CITY_2_LON}"
+        },
+    )
+    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+    assert result["result"].unique_id == f"{CITY_2_LAT}, {CITY_2_LON}"
+    assert (
+        result["title"]
+        == f"{CITY_2_NAME} - {CITY_2_ADMIN} ({CITY_2_ADMIN2}) - {CITY_2_COUNTRY}"
+    )
+    assert result["data"][CONF_LATITUDE] == str(CITY_2_LAT)
+    assert result["data"][CONF_LONGITUDE] == str(CITY_2_LON)
+
 
 async def test_import(hass, client_single):
     """Test import step."""
