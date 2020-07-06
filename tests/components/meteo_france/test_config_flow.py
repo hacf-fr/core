@@ -32,10 +32,6 @@ CITY_3_COUNTRY = "FR"
 CITY_3_ADMIN = "Nord-Pas-de-Calais"
 CITY_3_ADMIN2 = "62"
 
-CITY_2_POSTAL_DISTRICT_1 = "TO BE REMOVED"
-CITY_2_POSTAL_DISTRICT_4 = "TO BE REMOVED"
-CITY_2_POSTAL_DISTRICT_4 = "TO BE REMOVED"
-
 
 @pytest.fixture(name="client_1")
 def mock_controller_client_1():
