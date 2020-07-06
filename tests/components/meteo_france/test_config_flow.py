@@ -33,8 +33,8 @@ CITY_3_ADMIN = "Nord-Pas-de-Calais"
 CITY_3_ADMIN2 = "62"
 
 
-@pytest.fixture(name="client_1")
-def mock_controller_client_1():
+@pytest.fixture(name="client_single")
+def mock_controller_client_single():
     """Mock a successful client."""
     with patch(
         "homeassistant.components.meteo_france.config_flow.MeteoFranceClient",
@@ -96,7 +96,7 @@ def mock_controller_client_2():
         yield service_mock
 
 
-async def test_user(hass, client_1):
+async def test_user(hass, client_single):
     """Test user config."""
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
@@ -129,7 +129,7 @@ async def test_user_list(hass, client_2):
     assert result["step_id"] == "cities"
 
 
-async def test_import(hass, client_1):
+async def test_import(hass, client_single):
     """Test import step."""
     # import with all
     result = await hass.config_entries.flow.async_init(
@@ -145,7 +145,7 @@ async def test_import(hass, client_1):
     assert result["data"][CONF_LONGITUDE] == str(CITY_1_LON)
 
 
-async def test_abort_if_already_setup(hass, client_1):
+async def test_abort_if_already_setup(hass, client_single):
     """Test we abort if already setup."""
     MockConfigEntry(
         domain=DOMAIN,
