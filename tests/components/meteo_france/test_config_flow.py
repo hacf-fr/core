@@ -1,5 +1,4 @@
 """Tests for the Meteo-France config flow."""
-from meteofrance.exceptions import MeteoFranceException
 from meteofrance.model import Place
 import pytest
 
@@ -171,16 +170,3 @@ async def test_abort_if_already_setup(hass, client_1):
     )
     assert result["type"] == data_entry_flow.RESULT_TYPE_ABORT
     assert result["reason"] == "already_configured"
-
-
-async def test_client_failed(hass):
-    """Test when we have errors during client fetch."""
-    with patch(
-        "homeassistant.components.meteo_france.config_flow.MeteoFranceClient",
-        side_effect=MeteoFranceException(),
-    ):
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": SOURCE_USER}, data={CONF_CITY: CITY_1_POSTAL},
-        )
-        assert result["type"] == data_entry_flow.RESULT_TYPE_ABORT
-        assert result["reason"] == "unknown"

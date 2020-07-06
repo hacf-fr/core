@@ -8,7 +8,6 @@ from homeassistant import config_entries
 from homeassistant.config_entries import SOURCE_IMPORT
 from homeassistant.const import CONF_LATITUDE, CONF_LONGITUDE, CONF_MODE
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import AbortFlow
 
 from .const import CONF_CITY, FORECAST_MODE, FORECAST_MODE_DAILY
 from .const import DOMAIN  # pylint: disable=unused-import
@@ -53,21 +52,11 @@ class MeteoFranceFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         latitude = user_input.get(CONF_LATITUDE)
         longitude = user_input.get(CONF_LONGITUDE)
 
-        try:
+        if not latitude:
             client = MeteoFranceClient()
-
-            if not latitude:
-                places = await self.hass.async_add_executor_job(
-                    client.search_places, city
-                )
-                _LOGGER.debug("places search result: %s", places)
-                return await self.async_step_cities(places=places)
-        except AbortFlow as exp:
-            _LOGGER.error(exp)
-            return self.async_abort(reason="already_configured")
-        except Exception as exp:  # pylint: disable=broad-except
-            _LOGGER.error(exp)
-            return self.async_abort(reason="unknown")
+            places = await self.hass.async_add_executor_job(client.search_places, city)
+            _LOGGER.debug("places search result: %s", places)
+            return await self.async_step_cities(places=places)
 
         # Check if already configured
         await self.async_set_unique_id(f"{latitude}, {longitude}")
