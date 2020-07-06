@@ -65,8 +65,8 @@ def mock_setup():
         yield
 
 
-@pytest.fixture(name="client_2")
-def mock_controller_client_2():
+@pytest.fixture(name="client_multiple")
+def mock_controller_client_multiple():
     """Mock a successful client."""
     with patch(
         "homeassistant.components.meteo_france.config_flow.MeteoFranceClient",
@@ -118,7 +118,7 @@ async def test_user(hass, client_single):
     assert result["data"][CONF_LONGITUDE] == str(CITY_1_LON)
 
 
-async def test_user_list(hass, client_2):
+async def test_user_list(hass, client_multiple):
     """Test user config."""
 
     # test with all provided with search returning more than 1 place
