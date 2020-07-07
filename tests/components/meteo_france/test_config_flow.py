@@ -17,6 +17,16 @@ CITY_1_LON = 6.42306
 CITY_1_COUNTRY = "FR"
 CITY_1_ADMIN = "Rhône-Alpes"
 CITY_1_ADMIN2 = "74"
+CITY_1 = Place(
+    {
+        "name": CITY_1_NAME,
+        "lat": CITY_1_LAT,
+        "lon": CITY_1_LON,
+        "country": CITY_1_COUNTRY,
+        "admin": CITY_1_ADMIN,
+        "admin2": CITY_1_ADMIN2,
+    }
+)
 
 CITY_2_NAME = "Auch"
 CITY_2_LAT = 43.64528
@@ -24,6 +34,16 @@ CITY_2_LON = 0.58861
 CITY_2_COUNTRY = "FR"
 CITY_2_ADMIN = "Midi-Pyrénées"
 CITY_2_ADMIN2 = "32"
+CITY_2 = Place(
+    {
+        "name": CITY_2_NAME,
+        "lat": CITY_2_LAT,
+        "lon": CITY_2_LON,
+        "country": CITY_2_COUNTRY,
+        "admin": CITY_2_ADMIN,
+        "admin2": CITY_2_ADMIN2,
+    }
+)
 
 CITY_3_NAME = "Auchel"
 CITY_3_LAT = 50.50833
@@ -31,6 +51,16 @@ CITY_3_LON = 2.47361
 CITY_3_COUNTRY = "FR"
 CITY_3_ADMIN = "Nord-Pas-de-Calais"
 CITY_3_ADMIN2 = "62"
+CITY_3 = Place(
+    {
+        "name": CITY_3_NAME,
+        "lat": CITY_3_LAT,
+        "lon": CITY_3_LON,
+        "country": CITY_3_COUNTRY,
+        "admin": CITY_3_ADMIN,
+        "admin2": CITY_3_ADMIN2,
+    }
+)
 
 
 @pytest.fixture(name="client_single")
@@ -40,17 +70,7 @@ def mock_controller_client_single():
         "homeassistant.components.meteo_france.config_flow.MeteoFranceClient",
         update=False,
     ) as service_mock:
-        city_1 = Place(
-            {
-                "name": CITY_1_NAME,
-                "lat": CITY_1_LAT,
-                "lon": CITY_1_LON,
-                "country": CITY_1_COUNTRY,
-                "admin": CITY_1_ADMIN,
-                "admin2": CITY_1_ADMIN2,
-            }
-        )
-        service_mock.return_value.search_places.return_value = [city_1]
+        service_mock.return_value.search_places.return_value = [CITY_1]
         yield service_mock
 
 
@@ -72,27 +92,7 @@ def mock_controller_client_multiple():
         "homeassistant.components.meteo_france.config_flow.MeteoFranceClient",
         update=False,
     ) as service_mock:
-        city_2 = Place(
-            {
-                "name": CITY_2_NAME,
-                "lat": CITY_2_LAT,
-                "lon": CITY_2_LON,
-                "country": CITY_2_COUNTRY,
-                "admin": CITY_2_ADMIN,
-                "admin2": CITY_2_ADMIN2,
-            }
-        )
-        city_3 = Place(
-            {
-                "name": CITY_3_NAME,
-                "lat": CITY_3_LAT,
-                "lon": CITY_3_LON,
-                "country": CITY_3_COUNTRY,
-                "admin": CITY_3_ADMIN,
-                "admin2": CITY_3_ADMIN2,
-            }
-        )
-        service_mock.return_value.search_places.return_value = [city_2, city_3]
+        service_mock.return_value.search_places.return_value = [CITY_2, CITY_3]
         yield service_mock
 
 
@@ -110,10 +110,7 @@ async def test_user(hass, client_single):
     )
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
     assert result["result"].unique_id == f"{CITY_1_LAT}, {CITY_1_LON}"
-    assert (
-        result["title"]
-        == f"{CITY_1_NAME} - {CITY_1_ADMIN} ({CITY_1_ADMIN2}) - {CITY_1_COUNTRY}"
-    )
+    assert result["title"] == f"{CITY_1}"
     assert result["data"][CONF_LATITUDE] == str(CITY_1_LAT)
     assert result["data"][CONF_LONGITUDE] == str(CITY_1_LON)
 
@@ -130,16 +127,11 @@ async def test_user_list(hass, client_multiple):
 
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={
-            CONF_CITY: f"{CITY_3_NAME} - {CITY_3_ADMIN} ({CITY_3_ADMIN2}) - {CITY_3_COUNTRY};{CITY_3_LAT};{CITY_3_LON}"
-        },
+        user_input={CONF_CITY: f"{CITY_3};{CITY_3_LAT};{CITY_3_LON}"},
     )
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
     assert result["result"].unique_id == f"{CITY_3_LAT}, {CITY_3_LON}"
-    assert (
-        result["title"]
-        == f"{CITY_3_NAME} - {CITY_3_ADMIN} ({CITY_3_ADMIN2}) - {CITY_3_COUNTRY}"
-    )
+    assert result["title"] == f"{CITY_3}"
     assert result["data"][CONF_LATITUDE] == str(CITY_3_LAT)
     assert result["data"][CONF_LONGITUDE] == str(CITY_3_LON)
 
@@ -152,10 +144,7 @@ async def test_import(hass, client_multiple):
     )
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
     assert result["result"].unique_id == f"{CITY_2_LAT}, {CITY_2_LON}"
-    assert (
-        result["title"]
-        == f"{CITY_2_NAME} - {CITY_2_ADMIN} ({CITY_2_ADMIN2}) - {CITY_2_COUNTRY}"
-    )
+    assert result["title"] == f"{CITY_2}"
     assert result["data"][CONF_LATITUDE] == str(CITY_2_LAT)
     assert result["data"][CONF_LONGITUDE] == str(CITY_2_LON)
 
