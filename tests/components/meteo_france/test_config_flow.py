@@ -131,8 +131,24 @@ async def test_user_list(hass, client_multiple):
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
-            CONF_CITY: f"{CITY_2_NAME} - {CITY_2_ADMIN} ({CITY_2_ADMIN2}) - {CITY_2_COUNTRY};{CITY_2_LAT};{CITY_2_LON}"
+            CONF_CITY: f"{CITY_3_NAME} - {CITY_3_ADMIN} ({CITY_3_ADMIN2}) - {CITY_3_COUNTRY};{CITY_3_LAT};{CITY_3_LON}"
         },
+    )
+    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
+    assert result["result"].unique_id == f"{CITY_3_LAT}, {CITY_3_LON}"
+    assert (
+        result["title"]
+        == f"{CITY_3_NAME} - {CITY_3_ADMIN} ({CITY_3_ADMIN2}) - {CITY_3_COUNTRY}"
+    )
+    assert result["data"][CONF_LATITUDE] == str(CITY_3_LAT)
+    assert result["data"][CONF_LONGITUDE] == str(CITY_3_LON)
+
+
+async def test_import(hass, client_multiple):
+    """Test import step."""
+    # import with all
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_IMPORT}, data={CONF_CITY: CITY_2_NAME},
     )
     assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
     assert result["result"].unique_id == f"{CITY_2_LAT}, {CITY_2_LON}"
@@ -142,22 +158,6 @@ async def test_user_list(hass, client_multiple):
     )
     assert result["data"][CONF_LATITUDE] == str(CITY_2_LAT)
     assert result["data"][CONF_LONGITUDE] == str(CITY_2_LON)
-
-
-async def test_import(hass, client_single):
-    """Test import step."""
-    # import with all
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_IMPORT}, data={CONF_CITY: CITY_1_NAME},
-    )
-    assert result["type"] == data_entry_flow.RESULT_TYPE_CREATE_ENTRY
-    assert result["result"].unique_id == f"{CITY_1_LAT}, {CITY_1_LON}"
-    assert (
-        result["title"]
-        == f"{CITY_1_NAME} - {CITY_1_ADMIN} ({CITY_1_ADMIN2}) - {CITY_1_COUNTRY}"
-    )
-    assert result["data"][CONF_LATITUDE] == str(CITY_1_LAT)
-    assert result["data"][CONF_LONGITUDE] == str(CITY_1_LON)
 
 
 async def test_abort_if_already_setup(hass, client_single):
