@@ -7,32 +7,56 @@ from aiohttp import web
 
 from homeassistant import config_entries
 from homeassistant.components.http import HomeAssistantView
-from homeassistant.helpers import config_entry_oauth2_flow
 from homeassistant.helpers.network import get_url
 
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
-AUTH_CALLBACK_PATH = "/auth/external/linky"
+AUTH_CALLBACK_NAME = "api:linky"
+AUTH_CALLBACK_PATH = "/api/linky"
+
+CONF_REFRESH_TOKEN = "refresh_token"
+CONF_ACCESS_TOKEN = "access_token"
+CONF_USAGE_POINT_ID = "usage_point_id"
 
 
-class LinkyFlowHandler(
-    config_entry_oauth2_flow.AbstractOAuth2FlowHandler, domain=DOMAIN
-):
+class LinkyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow to handle Enedis Linky OAuth2 authentication."""
 
     DOMAIN = DOMAIN
     CONNECTION_CLASS = config_entries.CONN_CLASS_CLOUD_POLL
+
+    def __init__(self):
+        """Initialize flow."""
+        self._registered_view = False
 
     @property
     def logger(self) -> logging.Logger:
         """Return logger."""
         return logging.getLogger(__name__)
 
+    def _generate_view(self):
+        self.hass.http.register_view(LinkyAuthorizeCallbackView())
+        self._registered_view = True
+
     async def async_step_user(self, user_input: Optional[dict] = None) -> dict:
         """Go to the auth step."""
-        return await self.async_step_auth()
+        if not user_input:
+            return await self.async_step_auth()
+
+        # Check if already configured
+        await self.async_set_unique_id(user_input[CONF_USAGE_POINT_ID])
+        self._abort_if_unique_id_configured()
+
+        return self.async_create_entry(
+            title=user_input[CONF_USAGE_POINT_ID],
+            data={
+                CONF_REFRESH_TOKEN: user_input[CONF_REFRESH_TOKEN],
+                CONF_ACCESS_TOKEN: user_input[CONF_ACCESS_TOKEN],
+                CONF_USAGE_POINT_ID: user_input[CONF_USAGE_POINT_ID],
+            },
+        )
 
     async def async_step_auth(self, user_input: Optional[dict] = None) -> dict:
         """Create an entry for auth."""
@@ -40,14 +64,15 @@ class LinkyFlowHandler(
         _LOGGER.error("starting_auth_config")
         if user_input:
             _LOGGER.error("getting_params_from_auth")
-            self.external_data = user_input
-            _LOGGER.error(self.external_data)
-            return self.async_external_step_done(next_step_id="creation")
+            return self.async_step_user(user_input)
+
+        if not self._registered_view:
+            self._generate_view()
 
         params = urlencode(
             {
                 "flow_id": self.flow_id,
-                "redirect_uri": f"{get_url(self.hass)}{AUTH_CALLBACK_PATH}",
+                "redirect_uri": f"{get_url(self.hass, allow_internal=False)}{AUTH_CALLBACK_PATH}",
                 "box": "HA",
             }
         )
@@ -64,7 +89,7 @@ class LinkyAuthorizeCallbackView(HomeAssistantView):
 
     requires_auth = False
     url = AUTH_CALLBACK_PATH
-    name = "auth:external:linky"
+    name = AUTH_CALLBACK_NAME
 
     async def get(self, request: web.Request) -> web.Response:
         """Receive authorization code."""
