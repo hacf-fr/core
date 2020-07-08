@@ -58,6 +58,20 @@ async def async_setup_entry(
                 coordinator_forecast.data.position["dept"],
                 coordinator_forecast.data.position["name"],
             )
+        elif sensor_type in ["rain_chance", "freeze_chance", "snow_chance"]:
+            if coordinator_forecast.data.probability_forecast:
+                entities.append(MeteoFranceSensor(sensor_type, coordinator_forecast))
+                _LOGGER.debug(
+                    "Sensor %s added for %s.",
+                    sensor_type,
+                    coordinator_forecast.data.position["name"],
+                )
+            else:
+                _LOGGER.info(
+                    "Sensor %s skipped for %s as data is missing in the API",
+                    sensor_type,
+                    coordinator_forecast.data.position["name"],
+                )
 
         else:
             entities.append(MeteoFranceSensor(sensor_type, coordinator_forecast))
@@ -96,17 +110,21 @@ class MeteoFranceSensor(Entity):
     @property
     def state(self):
         """Return the state."""
+        _LOGGER.debug("%s state computing", self.name)
         path = SENSOR_TYPES[self._type][ENTITY_API_DATA_PATH].split(":")
         data = getattr(self.coordinator.data, path[0])
+        try:
+            if path[0] == "probability_forecast":
+                # TODO: return often 'null' with France cities. Need investigation
+                # TODO: "probability_forecast" not always available.
+                data = data[0]
 
-        if path[0] == "probability_forecast":
-            # TODO: return often 'null' with France cities. Need investigation
-            # TODO: "probability_forecast" not always available.
-            data = data[0]
-
-        if len(path) == 3:
-            value = data[path[1]][path[2]]
-        value = data[path[1]]
+            if len(path) == 3:
+                value = data[path[1]][path[2]]
+            value = data[path[1]]
+        except IndexError:
+            _LOGGER.warning("Expected data missing in API results for %s", self.name)
+            value = None
 
         if self._type == "wind_speed":
             # convert API wind speed from m/s to km/h
