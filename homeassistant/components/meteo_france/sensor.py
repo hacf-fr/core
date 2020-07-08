@@ -51,13 +51,14 @@ async def async_setup_entry(
                     coordinator_forecast.data.position["name"],
                 )
 
-        elif sensor_type == "weather_alert" and coordinator_alert:
-            entities.append(MeteoFranceAlertSensor(sensor_type, coordinator_alert))
-            _LOGGER.debug(
-                "Weather alert sensor for department n°%s added with %s.",
-                coordinator_forecast.data.position["dept"],
-                coordinator_forecast.data.position["name"],
-            )
+        elif sensor_type == "weather_alert":
+            if coordinator_alert:
+                entities.append(MeteoFranceAlertSensor(sensor_type, coordinator_alert))
+                _LOGGER.debug(
+                    "Weather alert sensor for department n°%s added with %s.",
+                    coordinator_forecast.data.position["dept"],
+                    coordinator_forecast.data.position["name"],
+                )
         elif sensor_type in ["rain_chance", "freeze_chance", "snow_chance"]:
             if coordinator_forecast.data.probability_forecast:
                 entities.append(MeteoFranceSensor(sensor_type, coordinator_forecast))
