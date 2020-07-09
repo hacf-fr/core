@@ -117,12 +117,12 @@ class MeteoFranceSensor(Entity):
         try:
             if path[0] == "probability_forecast":
                 # TODO: return often 'null' with France cities. Need investigation
-                # TODO: "probability_forecast" not always available.
                 data = data[0]
 
             if len(path) == 3:
                 value = data[path[1]][path[2]]
-            value = data[path[1]]
+            else:
+                value = data[path[1]]
         except IndexError:
             _LOGGER.warning("Expected data missing in API results for %s", self.name)
             value = None
