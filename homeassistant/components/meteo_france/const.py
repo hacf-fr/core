@@ -51,7 +51,7 @@ SENSOR_TYPES = {
         ENTITY_UNIT: UNIT_PERCENTAGE,
         ENTITY_ICON: "mdi:weather-snowy",
         ENTITY_CLASS: None,
-        ENTITY_ENABLE: False,
+        ENTITY_ENABLE: True,
         ENTITY_API_DATA_PATH: "probability_forecast:snow:3h",
     },
     "freeze_chance": {
