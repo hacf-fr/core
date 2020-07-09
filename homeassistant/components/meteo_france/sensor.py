@@ -113,24 +113,21 @@ class MeteoFranceSensor(Entity):
         """Return the state."""
         path = SENSOR_TYPES[self._type][ENTITY_API_DATA_PATH].split(":")
         data = getattr(self.coordinator.data, path[0])
-        try:
-            # Specific case for probability forecast
-            if path[0] == "probability_forecast":
-                if len(path) == 3:
-                    # This is a fix compared to other entitty as first index is always null in API result for unknown reason
-                    value = _find_first_probability_forecast_not_null(data, path)
-                else:
-                    value = data[0][path[1]]
 
-            # General case
+        # Specific case for probability forecast
+        if path[0] == "probability_forecast":
+            if len(path) == 3:
+                # This is a fix compared to other entitty as first index is always null in API result for unknown reason
+                value = _find_first_probability_forecast_not_null(data, path)
             else:
-                if len(path) == 3:
-                    value = data[path[1]][path[2]]
-                else:
-                    value = data[path[1]]
-        except IndexError:
-            _LOGGER.warning("Expected data is missing in API results for %s", self.name)
-            value = None
+                value = data[0][path[1]]
+
+        # General case
+        else:
+            if len(path) == 3:
+                value = data[path[1]][path[2]]
+            else:
+                value = data[path[1]]
 
         if self._type == "wind_speed":
             # convert API wind speed from m/s to km/h
@@ -254,8 +251,8 @@ class MeteoFranceAlertSensor(MeteoFranceSensor):
 
 
 def _find_first_probability_forecast_not_null(
-    probability_forecast: list, path: dict
+    probability_forecast: list, path: list
 ) -> int:
-    for timestamp in probability_forecast:
-        if timestamp[path[1]][path[2]] is not None:
-            return timestamp[path[1]][path[2]]
+    for forecast in probability_forecast:
+        if forecast[path[1]][path[2]] is not None:
+            return forecast[path[1]][path[2]]
