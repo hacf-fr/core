@@ -111,20 +111,25 @@ class MeteoFranceSensor(Entity):
     @property
     def state(self):
         """Return the state."""
-        _LOGGER.debug("%s state computing", self.name)
         path = SENSOR_TYPES[self._type][ENTITY_API_DATA_PATH].split(":")
         data = getattr(self.coordinator.data, path[0])
         try:
+            # Specific case for probability forecast
             if path[0] == "probability_forecast":
-                # TODO: return often 'null' with France cities. Need investigation
-                data = data[0]
+                if len(path) == 3:
+                    # This is a fix compared to other entitty as first index is always null in API result for unknown reason
+                    value = _find_first_probability_forecast_not_null(data, path)
+                else:
+                    value = data[0][path[1]]
 
-            if len(path) == 3:
-                value = data[path[1]][path[2]]
+            # General case
             else:
-                value = data[path[1]]
+                if len(path) == 3:
+                    value = data[path[1]][path[2]]
+                else:
+                    value = data[path[1]]
         except IndexError:
-            _LOGGER.warning("Expected data missing in API results for %s", self.name)
+            _LOGGER.warning("Expected data is missing in API results for %s", self.name)
             value = None
 
         if self._type == "wind_speed":
@@ -246,3 +251,11 @@ class MeteoFranceAlertSensor(MeteoFranceSensor):
             **readeable_phenomenoms_dict(self.coordinator.data.phenomenons_max_colors),
             ATTR_ATTRIBUTION: ATTRIBUTION,
         }
+
+
+def _find_first_probability_forecast_not_null(
+    probability_forecast: list, path: dict
+) -> int:
+    for timestamp in probability_forecast:
+        if timestamp[path[1]][path[2]] is not None:
+            return timestamp[path[1]][path[2]]
