@@ -132,7 +132,13 @@ CONDITION_CLASSES = {
     "hail": ["Risque de grêle"],
     "lightning": ["Risque d'orages", "Orages"],
     "lightning-rainy": ["Pluie orageuses", "Pluies orageuses", "Averses orageuses"],
-    "partlycloudy": ["Ciel voilé", "Ciel voilé nuit", "Éclaircies", "Eclaircies"],
+    "partlycloudy": [
+        "Ciel voilé",
+        "Ciel voilé nuit",
+        "Éclaircies",
+        "Eclaircies",
+        "Peu nuageux",
+    ],
     "pouring": ["Pluie forte"],
     "rainy": [
         "Bruine / Pluie faible",
