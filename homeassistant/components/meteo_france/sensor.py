@@ -253,6 +253,10 @@ class MeteoFranceAlertSensor(MeteoFranceSensor):
 def _find_first_probability_forecast_not_null(
     probability_forecast: list, path: list
 ) -> int:
-    for forecast in probability_forecast:
+    """Search the first not None value in the first forecast elements."""
+    for forecast in probability_forecast[0:3]:
         if forecast[path[1]][path[2]] is not None:
             return forecast[path[1]][path[2]]
+
+    # Default return value if no value founded
+    return None
