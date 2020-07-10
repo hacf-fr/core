@@ -122,7 +122,7 @@ SENSOR_TYPES = {
 
 CONDITION_CLASSES = {
     "clear-night": ["Nuit Claire", "Nuit claire"],
-    "cloudy": ["Très nuageux"],
+    "cloudy": ["Très nuageux", "Couvert"],
     "fog": [
         "Brume ou bancs de brouillard",
         "Brume",
