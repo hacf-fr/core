@@ -9,16 +9,12 @@ from homeassistant import config_entries
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.helpers.network import get_url
 
-from .const import DOMAIN
+from .const import CONF_ACCESS_TOKEN, CONF_REFRESH_TOKEN, CONF_USAGE_POINT_ID, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 AUTH_CALLBACK_NAME = "api:linky"
 AUTH_CALLBACK_PATH = "/api/linky"
-
-CONF_REFRESH_TOKEN = "refresh_token"
-CONF_ACCESS_TOKEN = "access_token"
-CONF_USAGE_POINT_ID = "usage_point_id"
 
 
 class LinkyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -64,7 +60,7 @@ class LinkyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         _LOGGER.error("starting_auth_config")
         if user_input:
             _LOGGER.error("getting_params_from_auth")
-            return self.async_step_user(user_input)
+            return await self.async_step_user(user_input)
 
         if not self._registered_view:
             self._generate_view()

@@ -15,33 +15,12 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup(hass: HomeAssistant, config: dict):
     """Set up the Enedis Linky component."""
-    hass.data[DOMAIN] = {}
-
-    _LOGGER.warning("async_setup")
-
-    if DOMAIN not in config:
-        return True
-
-    _LOGGER.warning("DOMAIN in config")
-    _LOGGER.warning(config[DOMAIN])
-
-    # config_flow.LinkyFlowHandler.async_register_implementation(
-    #     hass,
-    #     config_entry_oauth2_flow.LocalOAuth2Implementation(
-    #         hass,
-    #         DOMAIN,
-    #         config[DOMAIN][CONF_CLIENT_ID],
-    #         config[DOMAIN][CONF_CLIENT_SECRET],
-    #         OAUTH2_AUTHORIZE,
-    #         OAUTH2_TOKEN,
-    #     ),
-    # )
-
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up Enedis Linky from a config entry."""
+    hass.data.setdefault(DOMAIN, {})
     _LOGGER.warning("async_setup_entry")
     # implementation = await config_entry_oauth2_flow.async_get_config_entry_implementation(
     #     hass, entry
