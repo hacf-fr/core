@@ -13,8 +13,8 @@ from .const import CONF_ACCESS_TOKEN, CONF_REFRESH_TOKEN, CONF_USAGE_POINT_ID, D
 
 _LOGGER = logging.getLogger(__name__)
 
-AUTH_CALLBACK_NAME = "api:linky"
-AUTH_CALLBACK_PATH = "/api/linky"
+AUTH_CALLBACK_NAME = "api:linky:callback"
+AUTH_CALLBACK_PATH = "/api/linky/callback"
 
 
 class LinkyFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -104,6 +104,13 @@ class LinkyAuthorizeCallbackView(HomeAssistantView):
         await hass.config_entries.flow.async_configure(
             flow_id=request.query["flow_id"], user_input=request.query
         )
+
+        # hass = request.app["hass"]
+        # hass.async_create_task(
+        #     hass.config_entries.flow.async_init(
+        #         DOMAIN, context={"source": "code"}, data=code
+        #     )
+        # )
 
         return web.Response(
             headers={"content-type": "text/html"},

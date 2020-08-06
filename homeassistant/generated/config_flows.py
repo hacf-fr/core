@@ -99,6 +99,7 @@ FLOWS = [
     "konnected",
     "life360",
     "lifx",
+    "linky",
     "local_ip",
     "locative",
     "logi_circle",

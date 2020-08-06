@@ -4,7 +4,7 @@
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/linky",
   "requirements": [
-    "git+https://github.com/hacf-fr/enedis-api@enedis-api"
+    "git+https://github.com/hacf-fr/enedis-api@enedis-api#enedis-api==0.1.0dev1"
   ],
   "dependencies": ["http"],
   "codeowners": [
