@@ -7,7 +7,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 
-PLATFORMS = ["sensor"]
+PLATFORMS = []
 
 
 _LOGGER = logging.getLogger(__name__)

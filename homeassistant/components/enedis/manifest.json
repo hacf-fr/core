@@ -3,12 +3,11 @@
   "name": "Enedis",
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/enedis",
-  "requirements": [],
-  "ssdp": [],
-  "zeroconf": [],
-  "homekit": {},
-  "dependencies": [],
+  "requirements": [
+    "git+https://github.com/hacf-fr/enedis-api@enedis-api#enedis-api==0.1.0dev1"
+  ],
   "codeowners": [
+    "@hacf-fr",
     "@Quent@me"
   ]
 }

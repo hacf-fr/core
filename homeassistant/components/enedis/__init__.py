@@ -27,9 +27,7 @@ CONFIG_SCHEMA = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
-# TODO List the platforms that you want to support.
-# For your initial PR, limit it to 1 platform.
-PLATFORMS = ["light"]
+PLATFORMS = []
 
 
 async def async_setup(hass: HomeAssistant, config: dict):
@@ -39,17 +37,17 @@ async def async_setup(hass: HomeAssistant, config: dict):
     if DOMAIN not in config:
         return True
 
-    config_flow.OAuth2FlowHandler.async_register_implementation(
-        hass,
-        config_entry_oauth2_flow.LocalOAuth2Implementation(
-            hass,
-            DOMAIN,
-            config[DOMAIN][CONF_CLIENT_ID],
-            config[DOMAIN][CONF_CLIENT_SECRET],
-            OAUTH2_AUTHORIZE,
-            OAUTH2_TOKEN,
-        ),
-    )
+    # config_flow.OAuth2FlowHandler.async_register_implementation(
+    #     hass,
+    #     config_entry_oauth2_flow.LocalOAuth2Implementation(
+    #         hass,
+    #         DOMAIN,
+    #         config[DOMAIN][CONF_CLIENT_ID],
+    #         config[DOMAIN][CONF_CLIENT_SECRET],
+    #         OAUTH2_AUTHORIZE,
+    #         OAUTH2_TOKEN,
+    #     ),
+    # )
 
     return True
 
@@ -62,13 +60,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     session = config_entry_oauth2_flow.OAuth2Session(hass, entry, implementation)
 
-    # If using a requests-based API lib
     hass.data[DOMAIN][entry.entry_id] = api.ConfigEntryAuth(hass, entry, session)
-
-    # If using an aiohttp-based API lib
-    hass.data[DOMAIN][entry.entry_id] = api.AsyncConfigEntryAuth(
-        aiohttp_client.async_get_clientsession(hass), session
-    )
 
     for component in PLATFORMS:
         hass.async_create_task(
