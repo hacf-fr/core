@@ -15,23 +15,28 @@ from homeassistant.helpers import (
 from . import api, config_flow
 from .const import DOMAIN, OAUTH2_AUTHORIZE, OAUTH2_TOKEN
 
-CONFIG_SCHEMA = vol.Schema(
-    {
-        DOMAIN: vol.Schema(
-            {
-                vol.Required(CONF_CLIENT_ID): cv.string,
-                vol.Required(CONF_CLIENT_SECRET): cv.string,
-            }
-        )
-    },
-    extra=vol.ALLOW_EXTRA,
-)
+# CONFIG_SCHEMA = vol.Schema(
+#     {
+#         DOMAIN: vol.Schema(
+#             {
+#                 vol.Required(CONF_CLIENT_ID): cv.string,
+#                 vol.Required(CONF_CLIENT_SECRET): cv.string,
+#             }
+#         )
+#     },
+#     extra=vol.ALLOW_EXTRA,
+# )
 
 PLATFORMS = []
+
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(hass: HomeAssistant, config: dict):
     """Set up the Enedis component."""
+    _LOGGER.error("async_setup")
     hass.data[DOMAIN] = {}
 
     if DOMAIN not in config:
@@ -54,12 +59,14 @@ async def async_setup(hass: HomeAssistant, config: dict):
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up Enedis from a config entry."""
+    _LOGGER.error("async_setup_entry")
     implementation = await config_entry_oauth2_flow.async_get_config_entry_implementation(
         hass, entry
     )
 
     session = config_entry_oauth2_flow.OAuth2Session(hass, entry, implementation)
 
+    hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = api.ConfigEntryAuth(hass, entry, session)
 
     for component in PLATFORMS:
@@ -72,6 +79,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
+    _LOGGER.error("async_unload_entry")
     unload_ok = all(
         await asyncio.gather(
             *[

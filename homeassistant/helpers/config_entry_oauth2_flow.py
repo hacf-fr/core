@@ -163,15 +163,21 @@ class LocalOAuth2Implementation(AbstractOAuth2Implementation):
 
     async def _token_request(self, data: dict) -> dict:
         """Make a token request."""
+        print("_token_request")
         session = async_get_clientsession(self.hass)
 
         data["client_id"] = self.client_id
 
         if self.client_secret is not None:
             data["client_secret"] = self.client_secret
+        
+        print("_token_request data")
+        print(data)
 
         resp = await session.post(self.token_url, data=data)
         resp.raise_for_status()
+        print("_token_request url")
+        print(resp.url)
         return cast(dict, await resp.json())
 
 
