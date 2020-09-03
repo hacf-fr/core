@@ -141,7 +141,7 @@ class EnedisLocalOAuth2Implementation(
 
         print("--------------")
         print("URL_CONSTRUITE")
-        print(f"${self.token_url}?${urlencode(params)}")
+        print(f"{self.token_url}?{urlencode(params)}")
         print("--------------")
         print("STOP")
 
