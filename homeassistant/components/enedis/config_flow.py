@@ -128,7 +128,7 @@ class EnedisLocalOAuth2Implementation(
         print("_token_request")
         session = async_get_clientsession(self.hass)
 
-        params = {"box_type": "Home-Assistant", "env": "prod"}
+        params = {"grant_type": "refresh_token", "box_type": "Home-Assistant", "env": "prod"}
         params["refresh_token"] = self.refresh_token
         params["box_url"] = self.redirect_uri
         params["flow_id"] = self.flow_id
