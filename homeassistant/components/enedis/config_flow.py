@@ -145,7 +145,7 @@ class EnedisLocalOAuth2Implementation(
         print("--------------")
         print("STOP")
 
-        return None
+        # return None
 
         resp = await session.post(self.token_url, params=params, data=data)
         resp.raise_for_status()
