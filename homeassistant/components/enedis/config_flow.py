@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.network import get_url
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
+from urllib.parse import urlencode
 from .const import (
     CONF_ACCESS_TOKEN,
     CONF_REFRESH_TOKEN,
@@ -137,6 +138,14 @@ class EnedisLocalOAuth2Implementation(
         print(params)
         print("_token_request data")
         print(data)
+
+        print("--------------")
+        print("URL_CONSTRUITE")
+        print(f"${self.token_url}?${urlencode(params)}")
+        print("--------------")
+        print("STOP")
+
+        return None
 
         resp = await session.post(self.token_url, params=params, data=data)
         resp.raise_for_status()
