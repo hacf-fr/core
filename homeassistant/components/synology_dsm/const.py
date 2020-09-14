@@ -3,6 +3,7 @@
 from synology_dsm.api.core.security import SynoCoreSecurity
 from synology_dsm.api.core.upgrade import SynoCoreUpgrade
 from synology_dsm.api.core.utilization import SynoCoreUtilization
+from synology_dsm.api.download_station import SynoDownloadStation
 from synology_dsm.api.dsm.information import SynoDSMInformation
 from synology_dsm.api.storage.storage import SynoStorage
 from synology_dsm.api.surveillance_station import SynoSurveillanceStation
@@ -290,6 +291,51 @@ INFORMATION_SENSORS = {
         ENTITY_ICON: None,
         ENTITY_CLASS: DEVICE_CLASS_TIMESTAMP,
         ENTITY_ENABLE: False,
+    },
+}
+
+DOWNLOAD_STATION_SENSORS = {
+    f"{SynoDownloadStation.STAT_API_KEY}:speed_download": {
+        ENTITY_NAME: "speed download",
+        ENTITY_UNIT: DATA_RATE_KILOBYTES_PER_SECOND,
+        ENTITY_ICON: "mdi:download",
+        ENTITY_CLASS: None,
+        ENTITY_ENABLE: True,
+    },
+    f"{SynoDownloadStation.STAT_API_KEY}:speed_upload": {
+        ENTITY_NAME: "speed upload",
+        ENTITY_UNIT: DATA_RATE_KILOBYTES_PER_SECOND,
+        ENTITY_ICON: "mdi:upload",
+        ENTITY_CLASS: None,
+        ENTITY_ENABLE: True,
+    },
+    # f"{SynoDownloadStation.TASK_API_KEY}:active_downloads": {
+    #     ENTITY_NAME: "active downloads",
+    #     ENTITY_UNIT: None,
+    #     ENTITY_ICON: None,
+    #     ENTITY_CLASS: None,
+    #     ENTITY_ENABLE: True,
+    # },
+    f"{SynoDownloadStation.TASK_API_KEY}:paused_downloads": {
+        ENTITY_NAME: "paused download",
+        ENTITY_UNIT: None,
+        ENTITY_ICON: None,
+        ENTITY_CLASS: None,
+        ENTITY_ENABLE: True,
+    },
+    f"{SynoDownloadStation.TASK_API_KEY}:started_downloads": {
+        ENTITY_NAME: "started downloads",
+        ENTITY_UNIT: None,
+        ENTITY_ICON: None,
+        ENTITY_CLASS: None,
+        ENTITY_ENABLE: True,
+    },
+    f"{SynoDownloadStation.TASK_API_KEY}:completed_downloads": {
+        ENTITY_NAME: "completed downloads",
+        ENTITY_UNIT: None,
+        ENTITY_ICON: None,
+        ENTITY_CLASS: None,
+        ENTITY_ENABLE: True,
     },
 }
 

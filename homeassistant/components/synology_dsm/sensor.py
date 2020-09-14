@@ -2,6 +2,8 @@
 from datetime import timedelta
 from typing import Dict
 
+from synology_dsm.api.download_station import SynoDownloadStation
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_DISKS,
@@ -19,6 +21,7 @@ from . import SynoApi, SynologyDSMDeviceEntity, SynologyDSMDispatcherEntity
 from .const import (
     CONF_VOLUMES,
     DOMAIN,
+    DOWNLOAD_STATION_SENSORS,
     ENTITY_UNIT_LOAD,
     INFORMATION_SENSORS,
     STORAGE_DISK_SENSORS,
@@ -65,6 +68,17 @@ async def async_setup_entry(
         SynoDSMInfoSensor(api, sensor_type, INFORMATION_SENSORS[sensor_type])
         for sensor_type in INFORMATION_SENSORS
     ]
+
+    if SynoDownloadStation.INFO_API_KEY in api.dsm.apis:
+        await hass.async_add_executor_job(api.dsm.download_station.update)
+        info = await hass.async_add_executor_job(api.dsm.download_station.get_info)
+        version = info["data"]["version_string"]
+        entities += [
+            SynoDSMDownloadSensor(
+                api, sensor_type, DOWNLOAD_STATION_SENSORS[sensor_type], version
+            )
+            for sensor_type in DOWNLOAD_STATION_SENSORS
+        ]
 
     async_add_entities(entities)
 
@@ -151,3 +165,52 @@ class SynoDSMInfoSensor(SynologyDSMDispatcherEntity):
             self._previous_uptime = attr
             return self._last_boot
         return attr
+
+
+class SynoDSMDownloadSensor(SynologyDSMEntity):
+    """Representation a Synology Download Station sensor."""
+
+    def __init__(
+        self, api: SynoApi, entity_type: str, entity_info: Dict[str, str], version: str
+    ):
+        """Initialize a Synology Download Station."""
+        super().__init__(
+            api,
+            entity_type,
+            entity_info,
+        )
+        self._version = version
+
+    @property
+    def state(self):
+        """Return the state."""
+        # attr = getattr(self._api.download_station, self.entity_type)
+        # attr = await self.hass.async_add_executor_job(self._api.dsm.download_station.get_info)["data"][self.entity_type]
+        attr = 0
+        if attr is None:
+            return None
+
+        # DL/UP
+        if self._unit == DATA_RATE_KILOBYTES_PER_SECOND:
+            return round(attr / 1024.0, 1)
+
+        return attr
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return bool(self._api.download_station)
+
+    @property
+    def device_info(self) -> Dict[str, any]:
+        """Return the device information."""
+        return {
+            "identifiers": {
+                (DOMAIN, self._api.information.serial, SynoDownloadStation.INFO_API_KEY)
+            },
+            "name": "Download Station",
+            "manufacturer": "Synology",
+            "model": self._api.information.model,
+            "sw_version": self._version,
+            "via_device": (DOMAIN, self._api.information.serial),
+        }
