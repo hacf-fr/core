@@ -2,7 +2,7 @@
 import asyncio
 from datetime import timedelta
 import logging
-from typing import Dict
+from typing import Awaitable, Callable, Dict, Optional, TypeVar
 
 from synology_dsm import SynologyDSM
 from synology_dsm.api.core.security import SynoCoreSecurity
@@ -19,7 +19,6 @@ from homeassistant.const import (
     ATTR_ATTRIBUTION,
     CONF_DISKS,
     CONF_HOST,
-    CONF_MAC,
     CONF_PASSWORD,
     CONF_PORT,
     CONF_SCAN_INTERVAL,
@@ -31,16 +30,19 @@ from homeassistant.core import callback
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import entity_registry
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.dispatcher import (
-    async_dispatcher_connect,
-    async_dispatcher_send,
-)
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.typing import HomeAssistantType
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
+)
 
 from .const import (
     CONF_VOLUMES,
+    COORDINATOR_INFORMATION,
+    COORDINATOR_STORAGE,
+    COORDINATOR_UTILISATION,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SSL,
     DOMAIN,
@@ -78,8 +80,11 @@ CONFIG_SCHEMA = vol.Schema(
 
 ATTRIBUTION = "Data provided by Synology"
 
+SCAN_INTERVAL_CAMERA_DEFAULT = timedelta(seconds=30)
+SCAN_INTERVAL_DOWNLOAD_DEFAULT = timedelta(seconds=30)
 
 _LOGGER = logging.getLogger(__name__)
+T = TypeVar("T")
 
 
 async def async_setup(hass, config):
@@ -163,26 +168,102 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
     await entity_registry.async_migrate_entries(hass, entry.entry_id, _async_migrator)
 
     # Continue setup
-    api = SynoApi(hass, entry)
+    api = SynologyDSM(
+        entry.data[CONF_HOST],
+        entry.data[CONF_PORT],
+        entry.data[CONF_USERNAME],
+        entry.data[CONF_PASSWORD],
+        entry.data[CONF_SSL],
+        timeout=entry.options.get(CONF_TIMEOUT),
+    )
     try:
-        await api.async_setup()
+        await hass.async_add_executor_job(api.login, entry.data.get("device_token"))
     except SynologyDSMRequestException as err:
         raise ConfigEntryNotReady from err
+    await hass.async_add_executor_job(api.information.update)
+    await hass.async_add_executor_job(api.network.update)
+    syno_infos = {
+        "model": api.information.model,
+        "serial": api.information.model,
+        "version": api.information.version_string,
+        "hostname": api.network.hostname,
+    }
+
+    # async wrapper
+    async def _async_update_data_information() -> SynoDSMInformation:
+        """Fetch data from API endpoint."""
+        await hass.async_add_executor_job(api.information.update)
+        return api.information
+
+    async def _async_update_data_security() -> SynoCoreSecurity:
+        """Fetch data from API endpoint."""
+        await hass.async_add_executor_job(api.security.update)
+        return api.security
+
+    async def _async_update_data_storage() -> SynoStorage:
+        """Fetch data from API endpoint."""
+        await hass.async_add_executor_job(api.storage.update)
+        return api.storage
+
+    async def _async_update_data_utilisation() -> SynoCoreUtilization:
+        """Fetch data from API endpoint."""
+        await hass.async_add_executor_job(api.utilisation.update)
+        return api.utilisation
+
+    async def _async_update_data_surveillance_station() -> SynoSurveillanceStation:
+        """Fetch data from API endpoint."""
+        await hass.async_add_executor_job(api.surveillance_station.update)
+        return api.surveillance_station
+
+    coordinator_information = SynoDataUpdateCoordinator(
+        hass,
+        syno_infos,
+        name=f"Synology DSM {entry.title}: Information API",
+        update_method=_async_update_data_information,
+        update_interval=timedelta(
+            minutes=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        ),
+    )
+    coordinator_storage = SynoDataUpdateCoordinator(
+        hass,
+        syno_infos,
+        name=f"Synology DSM {entry.title}: Storage API",
+        update_method=_async_update_data_storage,
+        update_interval=timedelta(
+            minutes=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        ),
+    )
+    coordinator_utilisation = SynoDataUpdateCoordinator(
+        hass,
+        syno_infos,
+        name=f"Synology DSM {entry.title}: Utilisation API",
+        update_method=_async_update_data_utilisation,
+        update_interval=timedelta(
+            minutes=entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        ),
+    )
+    # Fetch initial data so we have data when entities subscribe
+    await coordinator_information.async_refresh()
+    await coordinator_storage.async_refresh()
+    await coordinator_utilisation.async_refresh()
+
+    if (
+        not coordinator_information.last_update_success
+        or not coordinator_storage.last_update_success
+        or not coordinator_utilisation.last_update_success
+    ):
+        raise ConfigEntryNotReady
 
     undo_listener = entry.add_update_listener(_async_update_listener)
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.unique_id] = {
+        COORDINATOR_INFORMATION: coordinator_information,
+        COORDINATOR_STORAGE: coordinator_storage,
+        COORDINATOR_UTILISATION: coordinator_utilisation,
         SYNO_API: api,
         UNDO_UPDATE_LISTENER: undo_listener,
     }
-
-    # For SSDP compat
-    if not entry.data.get(CONF_MAC):
-        network = await hass.async_add_executor_job(getattr, api.dsm, "network")
-        hass.config_entries.async_update_entry(
-            entry, data={**entry.data, CONF_MAC: network.macs}
-        )
 
     for platform in PLATFORMS:
         hass.async_create_task(
@@ -364,27 +445,50 @@ class SynoApi:
         async_dispatcher_send(self._hass, self.signal_sensor_update)
 
 
-class SynologyDSMEntity(Entity):
+class SynoDataUpdateCoordinator(DataUpdateCoordinator):
+    """Class to manage fetching data from single endpoint."""
+
+    def __init__(
+        self,
+        hass: HomeAssistantType,
+        syno_infos: dict,
+        *,
+        name: str,
+        update_interval: Optional[timedelta] = None,
+        update_method: Optional[Callable[[], Awaitable[T]]] = None,
+    ):
+        """Initialize global data updater."""
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=name,
+            update_interval=update_interval,
+            update_method=update_method,
+        )
+        self.syno_infos = syno_infos
+
+
+class SynologyDSMEntity(CoordinatorEntity):
     """Representation of a Synology NAS entry."""
 
     def __init__(
         self,
-        api: SynoApi,
+        coordinator: SynoDataUpdateCoordinator,
         entity_type: str,
         entity_info: Dict[str, str],
     ):
         """Initialize the Synology DSM entity."""
-        super().__init__()
+        super().__init__(coordinator)
 
-        self._api = api
+        self._syno_infos = coordinator.syno_infos
         self._api_key = entity_type.split(":")[0]
         self.entity_type = entity_type.split(":")[-1]
-        self._name = f"{api.network.hostname} {entity_info[ENTITY_NAME]}"
+        self._name = f"{self._syno_infos['hostname']} {entity_info[ENTITY_NAME]}"
         self._class = entity_info[ENTITY_CLASS]
         self._enable_default = entity_info[ENTITY_ENABLE]
         self._icon = entity_info[ENTITY_ICON]
         self._unit = entity_info[ENTITY_UNIT]
-        self._unique_id = f"{self._api.information.serial}_{entity_type}"
+        self._unique_id = f"{self._syno_infos['serial']}_{entity_type}"
 
     @property
     def unique_id(self) -> str:
@@ -422,11 +526,11 @@ class SynologyDSMEntity(Entity):
     def device_info(self) -> Dict[str, any]:
         """Return the device information."""
         return {
-            "identifiers": {(DOMAIN, self._api.information.serial)},
+            "identifiers": {(DOMAIN, self._syno_infos["serial"])},
             "name": "Synology NAS",
             "manufacturer": "Synology",
-            "model": self._api.information.model,
-            "sw_version": self._api.information.version_string,
+            "model": self._syno_infos["model"],
+            "sw_version": self._syno_infos["version"],
         }
 
     @property
@@ -434,27 +538,15 @@ class SynologyDSMEntity(Entity):
         """Return if the entity should be enabled when first added to the entity registry."""
         return self._enable_default
 
-    @property
-    def should_poll(self) -> bool:
-        """No polling needed."""
-        return False
+    # async def async_added_to_hass(self):
+    #     """Register state update callback."""
+    #     self.async_on_remove(
+    #         async_dispatcher_connect(
+    #             self.hass, self._api.signal_sensor_update, self.async_write_ha_state
+    #         )
+    #     )
 
-    async def async_update(self):
-        """Only used by the generic entity update service."""
-        if not self.enabled:
-            return
-
-        await self._api.async_update()
-
-    async def async_added_to_hass(self):
-        """Register state update callback."""
-        self.async_on_remove(
-            async_dispatcher_connect(
-                self.hass, self._api.signal_sensor_update, self.async_write_ha_state
-            )
-        )
-
-        self.async_on_remove(self._api.subscribe(self._api_key, self.unique_id))
+    #     self.async_on_remove(self._api.subscribe(self._api_key, self.unique_id))
 
 
 class SynologyDSMDeviceEntity(SynologyDSMEntity):
@@ -462,13 +554,13 @@ class SynologyDSMDeviceEntity(SynologyDSMEntity):
 
     def __init__(
         self,
-        api: SynoApi,
+        coordinator: DataUpdateCoordinator,
         entity_type: str,
         entity_info: Dict[str, str],
         device_id: str = None,
     ):
         """Initialize the Synology DSM disk or volume entity."""
-        super().__init__(api, entity_type, entity_info)
+        super().__init__(coordinator, entity_type, entity_info)
         self._device_id = device_id
         self._device_name = None
         self._device_manufacturer = None
@@ -477,12 +569,12 @@ class SynologyDSMDeviceEntity(SynologyDSMEntity):
         self._device_type = None
 
         if "volume" in entity_type:
-            volume = self._api.storage.get_volume(self._device_id)
+            volume = self.coordinator.data.get_volume(self._device_id)
             # Volume does not have a name
             self._device_name = volume["id"].replace("_", " ").capitalize()
             self._device_manufacturer = "Synology"
-            self._device_model = self._api.information.model
-            self._device_firmware = self._api.information.version_string
+            self._device_model = self._syno_infos["model"]
+            self._device_firmware = self._syno_infos["version"]
             self._device_type = (
                 volume["device_type"]
                 .replace("_", " ")
@@ -490,28 +582,23 @@ class SynologyDSMDeviceEntity(SynologyDSMEntity):
                 .replace("shr", "SHR")
             )
         elif "disk" in entity_type:
-            disk = self._api.storage.get_disk(self._device_id)
+            disk = self.coordinator.data.get_disk(self._device_id)
             self._device_name = disk["name"]
             self._device_manufacturer = disk["vendor"]
             self._device_model = disk["model"].strip()
             self._device_firmware = disk["firm"]
             self._device_type = disk["diskType"]
-        self._name = f"{self._api.network.hostname} {self._device_name} {entity_info[ENTITY_NAME]}"
+        self._name = f"{self._syno_infos['hostname']} {self._device_name} {entity_info[ENTITY_NAME]}"
         self._unique_id += f"_{self._device_id}"
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return bool(self._api.storage)
 
     @property
     def device_info(self) -> Dict[str, any]:
         """Return the device information."""
         return {
-            "identifiers": {(DOMAIN, self._api.information.serial, self._device_id)},
+            "identifiers": {(DOMAIN, self._syno_infos["serial"], self._device_id)},
             "name": f"Synology NAS ({self._device_name} - {self._device_type})",
             "manufacturer": self._device_manufacturer,
             "model": self._device_model,
             "sw_version": self._device_firmware,
-            "via_device": (DOMAIN, self._api.information.serial),
+            "via_device": (DOMAIN, self._syno_infos["serial"]),
         }

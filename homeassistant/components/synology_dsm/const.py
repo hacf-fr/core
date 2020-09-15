@@ -17,9 +17,13 @@ from homeassistant.const import (
 )
 
 DOMAIN = "synology_dsm"
-PLATFORMS = ["binary_sensor", "camera", "sensor", "switch"]
+PLATFORMS = ["sensor"]
+# PLATFORMS = ["binary_sensor", "camera", "sensor", "switch"]
 
 # Entry keys
+COORDINATOR_INFORMATION = "coordinator_information"
+COORDINATOR_STORAGE = "coordinator_storage"
+COORDINATOR_UTILISATION = "coordinator_utilisation"
 SYNO_API = "syno_api"
 UNDO_UPDATE_LISTENER = "undo_update_listener"
 

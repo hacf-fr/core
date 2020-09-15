@@ -15,14 +15,16 @@ from homeassistant.helpers.temperature import display_temp
 from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.util.dt import utcnow
 
-from . import SynoApi, SynologyDSMDeviceEntity, SynologyDSMEntity
+from . import SynoDataUpdateCoordinator, SynologyDSMDeviceEntity, SynologyDSMEntity
 from .const import (
     CONF_VOLUMES,
+    COORDINATOR_INFORMATION,
+    COORDINATOR_STORAGE,
+    COORDINATOR_UTILISATION,
     DOMAIN,
     INFORMATION_SENSORS,
     STORAGE_DISK_SENSORS,
     STORAGE_VOL_SENSORS,
-    SYNO_API,
     TEMP_SENSORS_KEYS,
     UTILISATION_SENSORS,
 )
@@ -33,103 +35,78 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Synology NAS Sensor."""
 
-    api = hass.data[DOMAIN][entry.unique_id][SYNO_API]
+    # api = hass.data[DOMAIN][entry.unique_id][SYNO_API]
+    coordinator_information = hass.data[DOMAIN][entry.unique_id][
+        COORDINATOR_INFORMATION
+    ]
+    coordinator_storage = hass.data[DOMAIN][entry.unique_id][COORDINATOR_STORAGE]
+    coordinator_utilisation = hass.data[DOMAIN][entry.unique_id][
+        COORDINATOR_UTILISATION
+    ]
 
     entities = [
-        SynoDSMUtilSensor(api, sensor_type, UTILISATION_SENSORS[sensor_type])
+        SynoDSMInfoSensor(
+            coordinator_information, sensor_type, INFORMATION_SENSORS[sensor_type]
+        )
+        for sensor_type in INFORMATION_SENSORS
+    ]
+
+    entities += [
+        SynoDSMUtilSensor(
+            coordinator_utilisation, sensor_type, UTILISATION_SENSORS[sensor_type]
+        )
         for sensor_type in UTILISATION_SENSORS
     ]
 
     # Handle all volumes
-    if api.storage.volumes_ids:
-        for volume in entry.data.get(CONF_VOLUMES, api.storage.volumes_ids):
+    if coordinator_storage.data.volumes_ids:
+        for volume in entry.data.get(
+            CONF_VOLUMES, coordinator_storage.data.volumes_ids
+        ):
             entities += [
                 SynoDSMStorageSensor(
-                    api, sensor_type, STORAGE_VOL_SENSORS[sensor_type], volume
+                    coordinator_storage,
+                    sensor_type,
+                    STORAGE_VOL_SENSORS[sensor_type],
+                    volume,
                 )
                 for sensor_type in STORAGE_VOL_SENSORS
             ]
 
     # Handle all disks
-    if api.storage.disks_ids:
-        for disk in entry.data.get(CONF_DISKS, api.storage.disks_ids):
+    if coordinator_storage.data.disks_ids:
+        for disk in entry.data.get(CONF_DISKS, coordinator_storage.data.disks_ids):
             entities += [
                 SynoDSMStorageSensor(
-                    api, sensor_type, STORAGE_DISK_SENSORS[sensor_type], disk
+                    coordinator_storage,
+                    sensor_type,
+                    STORAGE_DISK_SENSORS[sensor_type],
+                    disk,
                 )
                 for sensor_type in STORAGE_DISK_SENSORS
             ]
 
-    entities += [
-        SynoDSMInfoSensor(api, sensor_type, INFORMATION_SENSORS[sensor_type])
-        for sensor_type in INFORMATION_SENSORS
-    ]
-
     async_add_entities(entities)
 
 
-class SynoDSMUtilSensor(SynologyDSMEntity):
-    """Representation a Synology Utilisation sensor."""
-
-    @property
-    def state(self):
-        """Return the state."""
-        attr = getattr(self._api.utilisation, self.entity_type)
-        if callable(attr):
-            attr = attr()
-        if attr is None:
-            return None
-
-        # Data (RAM)
-        if self._unit == DATA_MEGABYTES:
-            return round(attr / 1024.0 ** 2, 1)
-
-        # Network
-        if self._unit == DATA_RATE_KILOBYTES_PER_SECOND:
-            return round(attr / 1024.0, 1)
-
-        return attr
-
-    @property
-    def available(self) -> bool:
-        """Return True if entity is available."""
-        return bool(self._api.utilisation)
-
-
-class SynoDSMStorageSensor(SynologyDSMDeviceEntity):
-    """Representation a Synology Storage sensor."""
-
-    @property
-    def state(self):
-        """Return the state."""
-        attr = getattr(self._api.storage, self.entity_type)(self._device_id)
-        if attr is None:
-            return None
-
-        # Data (disk space)
-        if self._unit == DATA_TERABYTES:
-            return round(attr / 1024.0 ** 4, 2)
-
-        # Temperature
-        if self.entity_type in TEMP_SENSORS_KEYS:
-            return display_temp(self.hass, attr, TEMP_CELSIUS, PRECISION_TENTHS)
-
-        return attr
-
-
 class SynoDSMInfoSensor(SynologyDSMEntity):
-    """Representation a Synology information sensor."""
+    """Representation a Synology Information sensor."""
 
-    def __init__(self, api: SynoApi, entity_type: str, entity_info: Dict[str, str]):
-        """Initialize the Synology SynoDSMInfoSensor entity."""
-        super().__init__(api, entity_type, entity_info)
+    def __init__(
+        self,
+        coordinator: SynoDataUpdateCoordinator,
+        entity_type: str,
+        entity_info: Dict[str, str],
+    ):
+        """Initialize the Synology Information entity."""
+        super().__init__(coordinator, entity_type, entity_info)
         self._previous_uptime = None
         self._last_boot = None
 
     @property
     def state(self):
         """Return the state."""
-        attr = getattr(self._api.information, self.entity_type)
+        attr = getattr(self.coordinator.data, self.entity_type)
         if attr is None:
             return None
 
@@ -145,4 +122,48 @@ class SynoDSMInfoSensor(SynologyDSMEntity):
 
             self._previous_uptime = attr
             return self._last_boot
+        return attr
+
+
+class SynoDSMUtilSensor(SynologyDSMEntity):
+    """Representation a Synology Utilisation sensor."""
+
+    @property
+    def state(self):
+        """Return the state."""
+        attr = getattr(self.coordinator.data, self.entity_type)
+        if callable(attr):
+            attr = attr()
+        if attr is None:
+            return None
+
+        # Data (RAM)
+        if self._unit == DATA_MEGABYTES:
+            return round(attr / 1024.0 ** 2, 1)
+
+        # Network
+        if self._unit == DATA_RATE_KILOBYTES_PER_SECOND:
+            return round(attr / 1024.0, 1)
+
+        return attr
+
+
+class SynoDSMStorageSensor(SynologyDSMDeviceEntity):
+    """Representation a Synology Storage sensor."""
+
+    @property
+    def state(self):
+        """Return the state."""
+        attr = getattr(self.coordinator.data, self.entity_type)(self._device_id)
+        if attr is None:
+            return None
+
+        # Data (disk space)
+        if self._unit == DATA_TERABYTES:
+            return round(attr / 1024.0 ** 4, 2)
+
+        # Temperature
+        if self.entity_type in TEMP_SENSORS_KEYS:
+            return display_temp(self.hass, attr, TEMP_CELSIUS, PRECISION_TENTHS)
+
         return attr
