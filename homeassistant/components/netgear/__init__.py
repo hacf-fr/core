@@ -1,7 +1,9 @@
 """Support for Netgear routers."""
 import asyncio
+from datetime import timedelta
 import logging
 
+from pynetgear import Netgear
 import voluptuous as vol
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
@@ -12,13 +14,16 @@ from homeassistant.const import (
     CONF_SSL,
     CONF_USERNAME,
 )
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.typing import HomeAssistantType
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN, PLATFORMS
-from .router import NetgearRouter
 
 _LOGGER = logging.getLogger(__name__)
+
+SCAN_INTERVAL = timedelta(seconds=30)
 
 NETGEAR_SCHEMA = vol.Schema(
     {
@@ -57,11 +62,37 @@ async def async_setup(hass, config):
 
 async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry):
     """Set up Netgear component."""
-    router = NetgearRouter(hass, entry)
-    await router.async_setup()
+
+    api = await hass.async_add_executor_job(
+        Netgear,
+        entry.data[CONF_PASSWORD],
+        entry.data.get(CONF_HOST),
+        entry.data.get(CONF_USERNAME),
+        entry.data.get(CONF_PORT),
+        entry.data.get(CONF_SSL),
+    )
+    await hass.async_add_executor_job(api.login)
+
+    async def _async_update_data_device():
+        """Fetch data from API endpoint."""
+        return await hass.async_add_executor_job(api.get_attached_devices_2)
+
+    coordinator_device = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name=f"Netgear devices for {entry.title}",
+        update_method=_async_update_data_device,
+        update_interval=SCAN_INTERVAL,
+    )
+
+    # Fetch initial data so we have data when entities subscribe
+    await coordinator_device.async_refresh()
+
+    if not coordinator_device.last_update_success:
+        raise ConfigEntryNotReady
 
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.unique_id] = router
+    hass.data[DOMAIN][entry.entry_id] = coordinator_device
 
     for platform in PLATFORMS:
         hass.async_create_task(

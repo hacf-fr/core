@@ -20,31 +20,31 @@ async def async_setup_entry(
     hass: HomeAssistantType, entry: ConfigEntry, async_add_entities
 ) -> None:
     """Set up device tracker for Netgear component."""
-    router = hass.data[DOMAIN][entry.unique_id]
+    coordinator = hass.data[DOMAIN][entry.entry_id]
     tracked = set()
 
     @callback
     def update_router():
         """Update the values of the router."""
-        add_entities(router, async_add_entities, tracked)
+        add_entities(coordinator, async_add_entities, tracked)
 
-    router.listeners.append(
-        async_dispatcher_connect(hass, router.signal_device_new, update_router)
-    )
+    # router.listeners.append(
+    #     async_dispatcher_connect(hass, router.signal_device_new, update_router)
+    # )
 
     update_router()
 
 
 @callback
-def add_entities(router, async_add_entities, tracked):
+def add_entities(coordinator, async_add_entities, tracked):
     """Add new tracker entities from the router."""
     new_tracked = []
 
-    for mac, device in router.devices.items():
+    for mac, device in coordinator.data.devices.items():
         if mac in tracked:
             continue
 
-        new_tracked.append(NetgearDeviceEntity(router, device))
+        new_tracked.append(NetgearDeviceEntity(coordinator, device))
         tracked.add(mac)
 
     if new_tracked:
