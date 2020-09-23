@@ -6,7 +6,10 @@ from synology_dsm.api.dsm.information import SynoDSMInformation
 from synology_dsm.api.storage.storage import SynoStorage
 from synology_dsm.api.surveillance_station import SynoSurveillanceStation
 
-from homeassistant.components.binary_sensor import DEVICE_CLASS_SAFETY
+from homeassistant.components.binary_sensor import (
+    DEVICE_CLASS_PROBLEM,
+    DEVICE_CLASS_SAFETY,
+)
 from homeassistant.const import (
     DATA_MEGABYTES,
     DATA_RATE_KILOBYTES_PER_SECOND,
@@ -48,7 +51,7 @@ SECURITY_BINARY_SENSORS = {
         ENTITY_NAME: "Security status",
         ENTITY_UNIT: None,
         ENTITY_ICON: None,
-        ENTITY_CLASS: DEVICE_CLASS_SAFETY,
+        ENTITY_CLASS: DEVICE_CLASS_PROBLEM,
         ENTITY_ENABLE: True,
     },
 }
@@ -58,7 +61,7 @@ STORAGE_DISK_BINARY_SENSORS = {
         ENTITY_NAME: "Exceeded Max Bad Sectors",
         ENTITY_UNIT: None,
         ENTITY_ICON: None,
-        ENTITY_CLASS: DEVICE_CLASS_SAFETY,
+        ENTITY_CLASS: DEVICE_CLASS_PROBLEM,
         ENTITY_ENABLE: True,
     },
     f"{SynoStorage.API_KEY}:disk_below_remain_life_thr": {
