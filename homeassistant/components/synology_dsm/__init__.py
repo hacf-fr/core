@@ -52,7 +52,6 @@ from homeassistant.helpers.update_coordinator import (
 
 from .const import (
     CONF_SERIAL,
-    CONF_VOLUMES,
     COORDINATOR_SURVEILLANCE,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_VERIFY_SSL,
