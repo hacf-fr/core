@@ -21,7 +21,11 @@ async def async_setup_entry(
 ) -> None:
     """Set up the switch."""
     router = hass.data[DOMAIN][entry.unique_id]
-    async_add_entities([FreeboxWifiSwitch(router)], True)
+    entities = [
+        FreeboxWifiSwitch(router),
+        FreeboxLteSwitch(router),
+    ]
+    async_add_entities(entities, True)
 
 
 class FreeboxWifiSwitch(SwitchEntity):
@@ -30,6 +34,7 @@ class FreeboxWifiSwitch(SwitchEntity):
     def __init__(self, router: FreeboxRouter) -> None:
         """Initialize the Wifi switch."""
         self._name = "Freebox WiFi"
+        self._icon = "mdi:wifi"
         self._state = None
         self._router = router
         self._unique_id = f"{self._router.mac} {self._name}"
@@ -50,6 +55,10 @@ class FreeboxWifiSwitch(SwitchEntity):
         return self._state
 
     @property
+    def icon(self) -> str:
+        """Return the icon."""
+        return self._icon
+
     def device_info(self) -> DeviceInfo:
         """Return the device information."""
         return self._router.device_info
@@ -75,5 +84,33 @@ class FreeboxWifiSwitch(SwitchEntity):
     async def async_update(self):
         """Get the state and update it."""
         datas = await self._router.wifi.get_global_config()
+        active = datas["enabled"]
+        self._state = bool(active)
+
+
+class FreeboxLteSwitch(FreeboxWifiSwitch):
+    """Representation of a freebox LTE switch."""
+
+    def __init__(self, router: FreeboxRouter) -> None:
+        """Initialize the LTE switch."""
+        self._name = "Freebox LTE"
+        self._icon = "mdi:signal-4g"
+        self._state = None
+        self._router = router
+        self._unique_id = f"{self._router.mac} {self._name}"
+
+    async def _async_set_state(self, enabled: bool):
+        """Turn the switch on or off."""
+        lte_config = {"enabled": enabled}
+        try:
+            await self._router.connection.set_lte_config(lte_config)
+        except InsufficientPermissionsError:
+            _LOGGER.warning(
+                "Home Assistant does not have permissions to modify the Freebox LTE settings. Please refer to documentation"
+            )
+
+    async def async_update(self):
+        """Get the state and update it."""
+        datas = await self._router.connection.get_lte_config()
         active = datas["enabled"]
         self._state = bool(active)
