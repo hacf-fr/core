@@ -1,6 +1,10 @@
 """Support for Synology DSM sensors."""
 from datetime import timedelta
+
+from synology_dsm.api.download_station.task import SynoDownloadTask
+from homeassistant.helpers.config_validation import time
 from typing import Dict
+import re
 
 from synology_dsm.api.download_station import SynoDownloadStation
 
@@ -15,13 +19,21 @@ from homeassistant.const import (
 )
 from homeassistant.helpers.temperature import display_temp
 from homeassistant.helpers.typing import HomeAssistantType
+from homeassistant.helpers.event import async_call_later
 from homeassistant.util.dt import utcnow
+from homeassistant.util import Throttle
 
-from . import SynoApi, SynologyDSMDeviceEntity, SynologyDSMDispatcherEntity
+from . import (
+    SynoApi,
+    SynologyDSMDeviceEntity,
+    SynologyDSMDispatcherEntity,
+    SynologyDSMTaskEntity,
+)
 from .const import (
     CONF_VOLUMES,
     DOMAIN,
     DOWNLOAD_STATION_SENSORS,
+    DOWNLOAD_STATION_TASK_SENSORS,
     ENTITY_UNIT_LOAD,
     INFORMATION_SENSORS,
     STORAGE_DISK_SENSORS,
@@ -29,6 +41,7 @@ from .const import (
     SYNO_API,
     TEMP_SENSORS_KEYS,
     UTILISATION_SENSORS,
+    getDownloadTaskAttributes,
 )
 
 
@@ -79,6 +92,14 @@ async def async_setup_entry(
             )
             for sensor_type in DOWNLOAD_STATION_SENSORS
         ]
+
+    if SynoDownloadStation.TASK_API_KEY in api.dsm.apis:
+        data = SynoDSMDownloadTaskData(
+            hass,
+            async_add_entities,
+            api,
+        )
+        await data.async_update()
 
     async_add_entities(entities)
 
@@ -167,7 +188,7 @@ class SynoDSMInfoSensor(SynologyDSMDispatcherEntity):
         return attr
 
 
-class SynoDSMDownloadSensor(SynologyDSMEntity):
+class SynoDSMDownloadSensor(SynologyDSMDispatcherEntity):
     """Representation a Synology Download Station sensor."""
 
     def __init__(
@@ -214,3 +235,117 @@ class SynoDSMDownloadSensor(SynologyDSMEntity):
             "sw_version": self._version,
             "via_device": (DOMAIN, self._api.information.serial),
         }
+
+
+class SynoDSMDownloadTaskData:
+    """Define a data handler for SynoDSMDownloadTaskData."""
+
+    def __init__(self, hass: HomeAssistantType, async_add_entities, api: SynoApi):
+        """Initialize."""
+        self._hass = hass
+        self._async_add_entities = async_add_entities
+        self._tasks = {}
+        self._api = api
+        self._reg = None
+
+        self.async_update = Throttle(timedelta(seconds=15))(self._async_update)
+
+    async def _cleanupUnavailable(self):
+        if not self._reg:
+            self._reg = await self._hass.helpers.entity_registry.async_get_registry()
+        p = re.compile(
+            f"sensor.{self._api.network.hostname.lower()}_.*_download"
+        )  # TODO: pas générique
+        states = self._hass.states.async_all("sensor")
+        for entity in states:
+            if p.match(entity.entity_id) and entity.state == "unavailable":
+                try:
+                    self._reg.async_remove(entity.entity_id)
+                except KeyError:
+                    continue
+
+    async def _async_update(self):
+        """Get updated data from Synology DownloadStation."""
+        await self._cleanupUnavailable()
+
+        await self._hass.async_add_executor_job(self._api.download_station.update)
+        tasks = self._api.download_station.get_all_tasks()
+        new_tasks = {t.id: t for t in tasks}
+        to_add = set(new_tasks) - set(self._tasks)
+        self._tasks = new_tasks
+        entities = []
+        if to_add:
+            for task_id in to_add:
+                entities += [
+                    SynoDSMDownloadTaskSensor(
+                        self._hass,
+                        self._api,
+                        self,
+                        sensor_type,
+                        DOWNLOAD_STATION_TASK_SENSORS[sensor_type],
+                        task_id,
+                    )
+                    for sensor_type in DOWNLOAD_STATION_TASK_SENSORS
+                ]
+
+        self._async_add_entities(entities)
+
+
+class SynoDSMDownloadTaskSensor(SynologyDSMTaskEntity):
+    """Representation a Synology DownloadStation task sensor."""
+
+    def __init__(
+        self,
+        hass: HomeAssistantType,
+        api: SynoApi,
+        data: SynoDSMDownloadTaskData,
+        entity_type: str,
+        entity_info: Dict[str, str],
+        task_id: str,
+    ):
+        """Initialize the Synology SynoDSMInfoSensor entity."""
+        super().__init__(api, entity_type, entity_info, task_id)
+        self._hass = hass
+        self._data = data
+        self._task: SynoDownloadTask = self._data._tasks[self._task_id]
+        self._attrs = getDownloadTaskAttributes(self._task)
+        self._friendly_name = self._task.title
+
+    @property
+    def state(self):
+        """Return the state."""
+        return self._task.status
+
+    @property
+    def device_state_attributes(self):
+        """Return other details about the sensor state."""
+        return self._attrs
+
+    async def async_update(self):
+        """Update the sensor."""
+
+        await self._data.async_update()
+
+        if not self.available:
+            async_call_later(self._hass, 1, self._remove)
+            return
+
+        if not self._task_id in self._data._tasks:
+            async_call_later(self._hass, 1, self._remove)
+            return
+
+        self._state = self._task.status
+        self._attrs = getDownloadTaskAttributes(self._task)
+
+    async def _remove(self, *_):
+        """Remove entity itself."""
+        await self.async_remove()
+
+        reg = await self.hass.helpers.entity_registry.async_get_registry()
+        entity_id = reg.async_get_entity_id(
+            "sensor",
+            "{self._api.network.hostname}_",
+            f"{self._task_id}_download",  # TODO: pas générique
+        )
+        if entity_id:
+            reg.async_remove(entity_id)

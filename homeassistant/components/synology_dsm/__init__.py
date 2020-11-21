@@ -10,7 +10,7 @@ from synology_dsm.api.core.security import SynoCoreSecurity
 from synology_dsm.api.core.system import SynoCoreSystem
 from synology_dsm.api.core.upgrade import SynoCoreUpgrade
 from synology_dsm.api.core.utilization import SynoCoreUtilization
-from synology_dsm.api.download_station import SynoDownloadStation
+from synology_dsm.api.download_station import SynoDownloadStation, SynoDownloadTask
 from synology_dsm.api.dsm.information import SynoDSMInformation
 from synology_dsm.api.dsm.network import SynoDSMNetwork
 from synology_dsm.api.storage.storage import SynoStorage
@@ -21,6 +21,7 @@ from synology_dsm.exceptions import (
     SynologyDSMRequestException,
 )
 import voluptuous as vol
+from voluptuous.error import Invalid
 
 from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.const import (
@@ -55,6 +56,7 @@ from homeassistant.helpers.update_coordinator import (
 
 from .const import (
     CONF_SERIAL,
+    ATTRIBUTION,
     CONF_VOLUMES,
     COORDINATOR_SURVEILLANCE,
     DEFAULT_SCAN_INTERVAL,
@@ -70,6 +72,16 @@ from .const import (
     SERVICE_REBOOT,
     SERVICE_SHUTDOWN,
     SERVICES,
+    SERVICE_TASK,
+    SERVICE_TASK_PAUSE,
+    SERVICE_TASK_RESUME,
+    SERVICE_TASK_DELETE,
+    SERVICE_TASK_CREATE,
+    TASK_ID,
+    TASK_FORCE_COMPLETE,
+    TASK_URI,
+    TASK_UNZIP_PASSWORD,
+    TASK_DESTINATION,
     STORAGE_DISK_BINARY_SENSORS,
     STORAGE_DISK_SENSORS,
     STORAGE_VOL_SENSORS,
@@ -96,8 +108,6 @@ CONFIG_SCHEMA = vol.Schema(
     {DOMAIN: vol.Schema(vol.All(cv.ensure_list, [CONFIG_SCHEMA]))},
     extra=vol.ALLOW_EXTRA,
 )
-
-ATTRIBUTION = "Data provided by Synology"
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -291,24 +301,55 @@ async def _async_setup_services(hass: HomeAssistantType):
             dsm_device = next(iter(dsm_devices.values()))
             serial = next(iter(dsm_devices))
         else:
-            _LOGGER.error(
-                "service_handler - more than one DSM configured, must specify one of serials %s",
-                sorted(dsm_devices),
+            raise Invalid(
+                f"more than one DSM configured, must specify one of serials {sorted(dsm_devices)}"
             )
-            return
 
         if not dsm_device:
-            _LOGGER.error(
-                "service_handler - DSM with specified serial %s not found", serial
-            )
-            return
+            raise Invalid(f"DSM with specified serial {serial} not found")
 
         _LOGGER.debug("%s DSM with serial %s", call.service, serial)
         dsm_api = dsm_device[SYNO_API]
         if call.service == SERVICE_REBOOT:
             await dsm_api.async_reboot()
         elif call.service == SERVICE_SHUTDOWN:
-            await dsm_api.system.shutdown()
+            await dsm_api.async_shutdown()
+        elif call.service.startswith(SERVICE_TASK):
+            await task_service_handler(dsm_api, call)
+
+    async def task_service_handler(dsm_api, call: ServiceCall):
+        if call.service in [
+            SERVICE_TASK_PAUSE,
+            SERVICE_TASK_RESUME,
+            SERVICE_TASK_DELETE,
+        ]:
+            task_id = call.data.get(TASK_ID)
+            if task_id:
+                if call.service == SERVICE_TASK_PAUSE:
+                    await hass.async_add_executor_job(
+                        dsm_api.download_station.pause, task_id
+                    )
+                elif call.service == SERVICE_TASK_RESUME:
+                    await hass.async_add_executor_job(
+                        dsm_api.download_station.resume, task_id
+                    )
+                elif call.service == SERVICE_TASK_DELETE:
+                    force_complete = call.data.get(TASK_FORCE_COMPLETE, False)
+                    await hass.async_add_executor_job(
+                        dsm_api.download_station.delete, task_id, force_complete
+                    )
+            else:
+                raise Invalid(f"you must specify a {TASK_ID}")
+        elif call.service == SERVICE_TASK_CREATE:
+            uri = call.data.get(TASK_URI)
+            if uri:
+                unzip_password = call.data.get(TASK_UNZIP_PASSWORD, None)
+                destination = call.data.get(TASK_DESTINATION, None)
+                await hass.async_add_executor_job(
+                    dsm_api.download_station.create, uri, unzip_password, destination
+                )
+            else:
+                raise Invalid(f"you must specify an {TASK_URI}")
 
     for service in SERVICES:
         hass.services.async_register(DOMAIN, service, service_handler)
@@ -444,8 +485,8 @@ class SynoApi:
             self._fetching_entities.get(SynoDSMInformation.API_KEY)
         )
         self._with_download_station = bool(
-            self.dsm.apis.get(SynoDownloadStation.TASK_API_KEY)
-        )
+            self._fetching_entities.get(SynoDownloadStation.INFO_API_KEY)
+        ) or bool(self._fetching_entities.get(SynoDownloadStation.TASK_API_KEY))
         self._with_surveillance_station = bool(
             self.dsm.apis.get(SynoSurveillanceStation.CAMERA_API_KEY)
         )
@@ -515,6 +556,7 @@ class SynoApi:
 
         if self._with_download_station:
             self.download_station = self.dsm.download_station
+            self.download_station.additionals.append("transfer")
 
         if self._with_surveillance_station:
             _LOGGER.debug(
@@ -736,3 +778,32 @@ class SynologyDSMDeviceEntity(SynologyDSMDispatcherEntity):
             "sw_version": self._device_firmware,
             "via_device": (DOMAIN, self._api.information.serial),
         }
+
+
+class SynologyDSMTaskEntity(SynologyDSMEntity):
+    """Representation of a Synology NAS DownloadStation task entry."""
+
+    def __init__(
+        self,
+        api: SynoApi,
+        entity_type: str,
+        entity_info: Dict[str, str],
+        task_id: str,
+    ):
+        """Initialize the Synology DSM disk or volume entity."""
+        super().__init__(api, entity_type, entity_info)
+        self._task_id = task_id
+        self._name = (
+            f"{self._api.network.hostname} {self._task_id} {entity_info[ENTITY_NAME]}"
+        )
+        self._unique_id += f"_{self._task_id}"
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return bool(self._api.download_station)
+
+    @property
+    def should_poll(self) -> bool:
+        """Polling needed."""
+        return True

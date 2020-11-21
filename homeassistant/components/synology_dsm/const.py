@@ -1,15 +1,17 @@
 """Constants for Synology DSM."""
 
+import math
 from synology_dsm.api.core.security import SynoCoreSecurity
 from synology_dsm.api.core.upgrade import SynoCoreUpgrade
 from synology_dsm.api.core.utilization import SynoCoreUtilization
-from synology_dsm.api.download_station import SynoDownloadStation
+from synology_dsm.api.download_station import SynoDownloadStation, SynoDownloadTask
 from synology_dsm.api.dsm.information import SynoDSMInformation
 from synology_dsm.api.storage.storage import SynoStorage
 from synology_dsm.api.surveillance_station import SynoSurveillanceStation
 
 from homeassistant.components.binary_sensor import DEVICE_CLASS_SAFETY
 from homeassistant.const import (
+    ATTR_ATTRIBUTION,
     DATA_MEGABYTES,
     DATA_RATE_KILOBYTES_PER_SECOND,
     DATA_TERABYTES,
@@ -17,6 +19,8 @@ from homeassistant.const import (
     DEVICE_CLASS_TIMESTAMP,
     PERCENTAGE,
 )
+
+ATTRIBUTION = "Data provided by Synology"
 
 DOMAIN = "synology_dsm"
 PLATFORMS = ["binary_sensor", "camera", "sensor", "switch"]
@@ -49,10 +53,41 @@ ENTITY_ENABLE = "enable"
 # Services
 SERVICE_REBOOT = "reboot"
 SERVICE_SHUTDOWN = "shutdown"
+SERVICE_TASK = "task_"
+SERVICE_TASK_PAUSE = "task_pause"
+SERVICE_TASK_RESUME = "task_resume"
+SERVICE_TASK_DELETE = "task_delete"
+SERVICE_TASK_CREATE = "task_create"
 SERVICES = [
     SERVICE_REBOOT,
     SERVICE_SHUTDOWN,
+    SERVICE_TASK_PAUSE,
+    SERVICE_TASK_RESUME,
+    SERVICE_TASK_DELETE,
+    SERVICE_TASK_CREATE,
 ]
+TASK_ID = "task_id"
+TASK_FORCE_COMPLETE = "force_complete"
+TASK_URI = "uri"
+TASK_UNZIP_PASSWORD = "unzip_password"
+TASK_DESTINATION = "destination"
+
+TASK_ATTR_TITLE = "title"
+TASK_ATTR_SIZE_VALUE = "size_value"
+TASK_ATTR_SIZE = "size"
+TASK_ATTR_STATUS = "status"
+TASK_ATTR_CREATE_TIME = "create_time"
+TASK_ATTR_DEST = "destination"
+TASK_ATTR_STARTED_TIME = "started_time"
+TASK_ATTR_SIZE_DOWNLOADED_VALUE = "size_downloaded_value"
+TASK_ATTR_SIZE_UPLOADED_VALUE = "size_uploaded_value"
+TASK_ATTR_SIZE_DOWNLOADED = "size_downloaded"
+TASK_ATTR_SIZE_UPLOADED = "size_uploaded"
+TASK_ATTR_SPEED_DOWNLOAD_VALUE = "speed_download_value"
+TASK_ATTR_SPEED_UPLOAD_VALUE = "speed_upload_value"
+TASK_ATTR_SPEED_DOWNLOAD = "speed_download"
+TASK_ATTR_SPEED_UPLOAD = "speed_upload"
+TASK_ATTR_SIZE_PERCENT = "downloaded_percent"
 
 # Entity keys should start with the API_KEY to fetch
 
@@ -339,6 +374,16 @@ DOWNLOAD_STATION_SENSORS = {
     },
 }
 
+DOWNLOAD_STATION_TASK_SENSORS = {
+    f"{SynoDownloadStation.API_KEY}:download": {
+        ENTITY_NAME: "Download",
+        ENTITY_UNIT: None,
+        ENTITY_ICON: "mdi:download",
+        ENTITY_CLASS: None,
+        ENTITY_ENABLE: True,
+    },
+}
+
 # Switch
 SURVEILLANCE_SWITCH = {
     f"{SynoSurveillanceStation.HOME_MODE_API_KEY}:home_mode": {
@@ -357,3 +402,51 @@ TEMP_SENSORS_KEYS = [
     "disk_temp",
     "temperature",
 ]
+
+
+def convert_size(size_bytes):
+    if size_bytes == 0:
+        return "0B"
+    size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return "%s %s" % (s, size_name[i])
+
+
+def convert_speed(size_bytes):
+    return convert_size(size_bytes) + "/s"
+
+
+def getDownloadTaskAttributes(task: SynoDownloadTask):
+    return {
+        ATTR_ATTRIBUTION: ATTRIBUTION,
+        TASK_ATTR_TITLE: task.title,
+        TASK_ATTR_SIZE_VALUE: task.size,
+        TASK_ATTR_SIZE: convert_size(task.size),
+        TASK_ATTR_STATUS: task.status,
+        TASK_ATTR_CREATE_TIME: task.additional["detail"]["create_time"] * 1000,
+        TASK_ATTR_DEST: task.additional["detail"]["destination"],
+        TASK_ATTR_STARTED_TIME: task.additional["detail"]["started_time"] * 1000,
+        TASK_ATTR_SIZE_DOWNLOADED_VALUE: task.additional["transfer"]["size_downloaded"],
+        TASK_ATTR_SIZE_UPLOADED_VALUE: task.additional["transfer"]["size_uploaded"],
+        TASK_ATTR_SIZE_DOWNLOADED: convert_size(
+            task.additional["transfer"]["size_downloaded"]
+        ),
+        TASK_ATTR_SIZE_UPLOADED: convert_size(
+            task.additional["transfer"]["size_uploaded"]
+        ),
+        TASK_ATTR_SPEED_DOWNLOAD_VALUE: task.additional["transfer"]["speed_download"],
+        TASK_ATTR_SPEED_UPLOAD_VALUE: task.additional["transfer"]["speed_upload"],
+        TASK_ATTR_SPEED_DOWNLOAD: convert_speed(
+            task.additional["transfer"]["speed_download"]
+        ),
+        TASK_ATTR_SPEED_UPLOAD: convert_speed(
+            task.additional["transfer"]["speed_upload"]
+        ),
+        TASK_ATTR_SIZE_PERCENT: round(
+            (task.additional["transfer"]["size_downloaded"] / task.size) * 100
+        )
+        if task.size > 0
+        else 0,
+    }

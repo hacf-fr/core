@@ -13,3 +13,52 @@ shutdown:
     serial:
       description: serial of the NAS to shutdown; required when multiple NAS are configured.
       example: 1NDVC86409
+
+task_pause:
+  description: Pause a download task in DownloadStation.
+  fields:
+    serial:
+      description: serial of the NAS; required when multiple NAS are configured.
+      example: 1NDVC86409
+    task_id:
+      description: id of the task to pause.
+      example: dbid_10
+
+task_resume:
+  description: Resume a download task in DownloadStation.
+  fields:
+    serial:
+      description: serial of the NAS; required when multiple NAS are configured.
+      example: 1NDVC86409
+    task_id:
+      description: id of the task to resume.
+      example: dbid_10
+
+task_delete:
+  description: Delete a download task in DownloadStation.
+  fields:
+    serial:
+      description: serial of the NAS; required when multiple NAS are configured.
+      example: 1NDVC86409
+    task_id:
+      description: id of the task to delete.
+      example: dbid_10
+    force_complete:
+      description: Force to move uncompleted download files to the destination.
+      example: true
+
+task_create:
+  description: Create a download task in DownloadStation.
+  fields:
+    serial:
+      description: serial of the NAS; required when multiple NAS are configured.
+      example: 1NDVC86409
+    uri:
+      description: id of the task to delete.
+      example: https://user:pass@mydlurl.com/file.zip
+    unzip_password:
+      description: Password for unzipping download tasks
+      example: password
+    destination:
+      description: Download destination path starting with a shared folder
+      example: medias
