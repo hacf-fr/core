@@ -74,10 +74,15 @@ from .const import (
     SERVICES,
     SERVICE_TASK,
     SERVICE_TASK_PAUSE,
+    SERVICE_TASK_PAUSE_ALL,
     SERVICE_TASK_RESUME,
+    SERVICE_TASK_RESUME_ALL,
     SERVICE_TASK_DELETE,
+    SERVICE_TASK_DELETE_ALL,
     SERVICE_TASK_CREATE,
+    TASK_STATUSES,
     TASK_ID,
+    TASK_ALL,
     TASK_FORCE_COMPLETE,
     TASK_URI,
     TASK_UNZIP_PASSWORD,
@@ -320,23 +325,50 @@ async def _async_setup_services(hass: HomeAssistantType):
     async def task_service_handler(dsm_api, call: ServiceCall):
         if call.service in [
             SERVICE_TASK_PAUSE,
+            SERVICE_TASK_PAUSE_ALL,
             SERVICE_TASK_RESUME,
+            SERVICE_TASK_RESUME_ALL,
             SERVICE_TASK_DELETE,
+            SERVICE_TASK_DELETE_ALL,
         ]:
-            task_id = call.data.get(TASK_ID)
+            task_id = None
+            all_tasks = []
+            if call.service.endswith("_all"):
+                task_id = {}
+                all_tasks = dsm_api.download_station.get_all_tasks()
+                for s in TASK_STATUSES:
+                    task_id[s] = []
+
+                for t in all_tasks:
+                    task_id[t.status] += [t.id]
+            else:
+                task_id = call.data.get(TASK_ID)
+
             if task_id:
-                if call.service == SERVICE_TASK_PAUSE:
+                if call.service.startswith(SERVICE_TASK_PAUSE):
+                    if isinstance(task_id, Dict):
+                        task_id = task_id["waiting"] + task_id["downloading"]
+                        if len(task_id) == 0:
+                            raise Invalid(
+                                f"No task matching status waiting or downloading"
+                            )
                     await hass.async_add_executor_job(
                         dsm_api.download_station.pause, task_id
                     )
-                elif call.service == SERVICE_TASK_RESUME:
+                elif call.service.startswith(SERVICE_TASK_RESUME):
+                    if isinstance(task_id, Dict):
+                        task_id = task_id["paused"] + task_id["error"]
+                        if len(task_id) == 0:
+                            raise Invalid(f"No task matching status paused or error")
                     await hass.async_add_executor_job(
                         dsm_api.download_station.resume, task_id
                     )
-                elif call.service == SERVICE_TASK_DELETE:
+                elif call.service.startswith(SERVICE_TASK_DELETE):
                     force_complete = call.data.get(TASK_FORCE_COMPLETE, False)
                     await hass.async_add_executor_job(
-                        dsm_api.download_station.delete, task_id, force_complete
+                        dsm_api.download_station.delete,
+                        [t.id for t in all_tasks],
+                        force_complete,
                     )
             else:
                 raise Invalid(f"you must specify a {TASK_ID}")

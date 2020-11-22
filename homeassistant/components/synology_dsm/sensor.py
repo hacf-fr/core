@@ -334,6 +334,7 @@ class SynoDSMDownloadTaskSensor(SynologyDSMTaskEntity):
             async_call_later(self._hass, 1, self._remove)
             return
 
+        self._task = self._data._tasks[self._task_id]
         self._state = self._task.status
         self._attrs = getDownloadTaskAttributes(self._task)
 

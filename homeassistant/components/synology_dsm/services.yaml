@@ -24,6 +24,13 @@ task_pause:
       description: id of the task to pause.
       example: dbid_10
 
+task_pause_all:
+  description: Pause all download tasks in DownloadStation.
+  fields:
+    serial:
+      description: serial of the NAS; required when multiple NAS are configured.
+      example: 1NDVC86409
+
 task_resume:
   description: Resume a download task in DownloadStation.
   fields:
@@ -34,6 +41,13 @@ task_resume:
       description: id of the task to resume.
       example: dbid_10
 
+task_resume_all:
+  description: Resume all download tasks in DownloadStation.
+  fields:
+    serial:
+      description: serial of the NAS; required when multiple NAS are configured.
+      example: 1NDVC86409
+
 task_delete:
   description: Delete a download task in DownloadStation.
   fields:
@@ -43,6 +57,16 @@ task_delete:
     task_id:
       description: id of the task to delete.
       example: dbid_10
+    force_complete:
+      description: Force to move uncompleted download files to the destination.
+      example: true
+
+task_delete_all:
+  description: Delete all download tasks in DownloadStation.
+  fields:
+    serial:
+      description: serial of the NAS; required when multiple NAS are configured.
+      example: 1NDVC86409
     force_complete:
       description: Force to move uncompleted download files to the destination.
       example: true

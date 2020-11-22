@@ -55,18 +55,26 @@ SERVICE_REBOOT = "reboot"
 SERVICE_SHUTDOWN = "shutdown"
 SERVICE_TASK = "task_"
 SERVICE_TASK_PAUSE = "task_pause"
+SERVICE_TASK_PAUSE_ALL = "task_pause_all"
 SERVICE_TASK_RESUME = "task_resume"
+SERVICE_TASK_RESUME_ALL = "task_resume_all"
 SERVICE_TASK_DELETE = "task_delete"
+SERVICE_TASK_DELETE_ALL = "task_delete_all"
 SERVICE_TASK_CREATE = "task_create"
 SERVICES = [
     SERVICE_REBOOT,
     SERVICE_SHUTDOWN,
     SERVICE_TASK_PAUSE,
+    SERVICE_TASK_PAUSE_ALL,
     SERVICE_TASK_RESUME,
+    SERVICE_TASK_RESUME_ALL,
     SERVICE_TASK_DELETE,
+    SERVICE_TASK_DELETE_ALL,
     SERVICE_TASK_CREATE,
 ]
+TASK_STATUSES = ["error", "finished", "downloading", "paused", "waiting"]
 TASK_ID = "task_id"
+TASK_ALL = "all"
 TASK_FORCE_COMPLETE = "force_complete"
 TASK_URI = "uri"
 TASK_UNZIP_PASSWORD = "unzip_password"
