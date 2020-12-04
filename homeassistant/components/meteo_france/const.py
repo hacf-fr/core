@@ -9,6 +9,7 @@ from homeassistant.const import (
     PRESSURE_HPA,
     SPEED_KILOMETERS_PER_HOUR,
     TEMP_CELSIUS,
+    UV_INDEX,
 )
 
 DOMAIN = "meteo_france"
@@ -93,7 +94,7 @@ SENSOR_TYPES = {
     },
     "uv": {
         ENTITY_NAME: "UV",
-        ENTITY_UNIT: None,
+        ENTITY_UNIT: UV_INDEX,
         ENTITY_ICON: "mdi:sunglasses",
         ENTITY_DEVICE_CLASS: None,
         ENTITY_ENABLE: True,
