@@ -18,6 +18,8 @@ from homeassistant.components.weather import (
     ATTR_CONDITION_WINDY_VARIANT,
 )
 from homeassistant.const import (
+    DEGREE,
+    DEVICE_CLASS_HUMIDITY,
     DEVICE_CLASS_PRESSURE,
     DEVICE_CLASS_TEMPERATURE,
     DEVICE_CLASS_TIMESTAMP,
@@ -166,6 +168,22 @@ SENSOR_TYPES = {
         ENTITY_DEVICE_CLASS: None,
         ENTITY_ENABLE: False,
         ENTITY_API_DATA_PATH: "today_forecast:weather12H:desc",
+    },
+    "humidity": {
+        ENTITY_NAME: "Humidity",
+        ENTITY_UNIT: PERCENTAGE,
+        ENTITY_ICON: None,
+        ENTITY_DEVICE_CLASS: DEVICE_CLASS_HUMIDITY,
+        ENTITY_ENABLE: False,
+        ENTITY_API_DATA_PATH: "current_forecast:humidity",
+    },
+    "wind_direction": {
+        ENTITY_NAME: "Wind direction",
+        ENTITY_UNIT: DEGREE,
+        ENTITY_ICON: "mdi:windsock",
+        ENTITY_DEVICE_CLASS: None,
+        ENTITY_ENABLE: False,
+        ENTITY_API_DATA_PATH: "current_forecast:wind:direction",
     },
 }
 
