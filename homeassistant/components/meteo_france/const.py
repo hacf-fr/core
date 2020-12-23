@@ -92,7 +92,7 @@ SENSOR_TYPES = {
         ENTITY_UNIT: SPEED_KILOMETERS_PER_HOUR,
         ENTITY_ICON: "mdi:weather-windy-variant",
         ENTITY_DEVICE_CLASS: None,
-        ENTITY_ENABLE: False,
+        ENTITY_ENABLE: True,
         ENTITY_API_DATA_PATH: "current_forecast:wind:gust",
     },
     "wind_speed": {
