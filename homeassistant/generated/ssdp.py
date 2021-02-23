@@ -83,6 +83,12 @@ SSDP = {
             "manufacturer": "DIRECTV"
         }
     ],
+    "freebox": [
+        {
+            "deviceType": "urn:schemas-upnp-org:device:InternetGatewayDevice:2",
+            "manufacturer": "Freebox"
+        }
+    ],
     "fritz": [
         {
             "st": "urn:schemas-upnp-org:device:fritzbox:1"
