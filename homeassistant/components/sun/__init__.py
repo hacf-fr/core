@@ -2,6 +2,7 @@
 from datetime import timedelta
 import logging
 
+from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
 from homeassistant.const import (
     CONF_ELEVATION,
     EVENT_CORE_CONFIG_UPDATE,
@@ -15,6 +16,7 @@ from homeassistant.helpers.sun import (
     get_astral_location,
     get_location_astral_event_next,
 )
+from homeassistant.helpers.typing import HomeAssistantType
 from homeassistant.util import dt as dt_util
 
 # mypy: allow-untyped-calls, allow-untyped-defs, no-check-untyped-defs
@@ -72,15 +74,38 @@ _PHASE_UPDATES = {
 }
 
 
-async def async_setup(hass, config):
+async def async_setup(hass: HomeAssistantType, config: dict) -> bool:
     """Track the state of the sun."""
     if config.get(CONF_ELEVATION) is not None:
         _LOGGER.warning(
             "Elevation is now configured in Home Assistant core. "
             "See https://www.home-assistant.io/docs/configuration/basic/"
         )
-    Sun(hass)
+
+    if DOMAIN in config:
+        for entry_config in config[DOMAIN]:
+            hass.async_create_task(
+                hass.config_entries.flow.async_init(
+                    DOMAIN, context={"source": SOURCE_IMPORT}, data=entry_config
+                )
+            )
+
     return True
+
+
+async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool:
+    """Set up Sun entry."""
+    hass.data[DOMAIN] = Sun(hass)
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    unload_ok = await hass.config_entries.async_forward_entry_unload(entry, "sun")
+    if unload_ok:
+        hass.data.pop(DOMAIN)
+
+    return unload_ok
 
 
 class Sun(Entity):
@@ -88,7 +113,7 @@ class Sun(Entity):
 
     entity_id = ENTITY_ID
 
-    def __init__(self, hass):
+    def __init__(self, hass: HomeAssistantType):
         """Initialize the sun."""
         self.hass = hass
         self.location = None
@@ -113,6 +138,11 @@ class Sun(Entity):
     def name(self):
         """Return the name."""
         return "Sun"
+
+    @property
+    def unique_id(self) -> str:
+        """Return a unique ID."""
+        return DOMAIN
 
     @property
     def state(self):
