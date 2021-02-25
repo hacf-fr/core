@@ -5,30 +5,13 @@ from freebox_api.exceptions import AuthorizationError, HttpRequestError
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.components import ssdp
+from homeassistant.components.ssdp import ATTR_UPNP_PRESENTATION_URL
 from homeassistant.const import CONF_HOST, CONF_PORT
 
 from .const import DOMAIN
 from .router import get_api
 
 _LOGGER = logging.getLogger(__name__)
-
-DISCOVERY = {
-    "host": "192.168.0.254",
-    "port": 80,
-    "hostname": "Freebox-Server.local.",
-    "properties": {
-        "api_version": "8.0",
-        "device_type": "FreeboxServer1,2",
-        "api_base_url": "/api/",
-        "uid": "b15ab20debb399f95001a9ca207d2777",
-        "https_available": "1",
-        "https_port": "51678",
-        "box_model": "fbxgw-r2/full",
-        "box_model_name": "Freebox Server (r2)",
-        "api_domain": "61ko051s.fbxos.fr",
-    },
-}
 
 ZEROCONF = {
     "host": "192.168.0.254",
@@ -134,6 +117,8 @@ SSDP = {
     "ssdp_server": "Linux/2.6 UPnP/1.0 fbxigdd/1.1",
 }
 
+PRESENTATION_URL = "http://mafreebox.freebox.fr/"
+
 
 class FreeboxFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow."""
@@ -175,6 +160,7 @@ class FreeboxFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         # Check if already configured
         await self.async_set_unique_id(self._host)
         self._abort_if_unique_id_configured()
+        _LOGGER.debug(self.context["title_placeholders"])
 
         return await self.async_step_link()
 
@@ -195,7 +181,11 @@ class FreeboxFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             await fbx.open(self._host, self._port)
 
             # Check permissions
-            await fbx.system.get_config()
+            config = await fbx.system.get_config()
+            _LOGGER.debug("FBX_CONFIG")
+            # _LOGGER.debug(config)
+            _LOGGER.debug(config["mac"].replace(":", ""))
+
             await fbx.lan.get_hosts_list()
             await self.hass.async_block_till_done()
 
@@ -236,6 +226,42 @@ class FreeboxFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_ssdp(self, discovery_info: dict):
         """Initialize flow from SSDP."""
         _LOGGER.warn("async_step_ssdp")
-        return await self.async_step_user(
-            {CONF_HOST: ssdp.ATTR_UPNP_PRESENTATION_URL, CONF_PORT: 80}
+
+        _LOGGER.debug("FBX_CONFIG")
+        _LOGGER.debug(discovery_info.get("serialNumber"))
+
+        # Check if already configured
+        # await self.async_set_unique_id(discovery_info.get("serialNumber"))
+        # self._abort_if_unique_id_configured()
+        host = discovery_info[ATTR_UPNP_PRESENTATION_URL]
+        # _LOGGER.debug(self.context["title_placeholders"])
+
+        # self.context.update(
+        #     {
+        #         "title_placeholders": {
+        #             "host": host,
+        #         }
+        #     }
+        # )
+        # self.context["title_placeholders"] = {
+        #     CONF_NAME: device_config[CONF_NAME],
+        #     CONF_HOST: device_config[CONF_HOST],
+        # }
+
+        return await self.async_step_user({CONF_HOST: host, CONF_PORT: 80})
+
+    async def async_step_zeroconf(self, discovery_info: dict):
+        """Initialize flow from zeroconf."""
+        _LOGGER.warn("async_step_zeroconf")
+        host = discovery_info.get("properties", {}).get("api_domain")
+        port = discovery_info.get("properties", {}).get("https_port")
+
+        self.context.update(
+            {
+                "title_placeholders": {
+                    "host": host,
+                }
+            }
         )
+
+        return await self.async_step_user({CONF_HOST: host, CONF_PORT: port})
