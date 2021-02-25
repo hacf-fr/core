@@ -30,6 +30,36 @@ DISCOVERY = {
     },
 }
 
+ZEROCONF = {
+    "host": "192.168.0.254",
+    "port": 80,
+    "hostname": "Freebox-Server.local.",
+    "type": "_fbx-api._tcp.local.",
+    "name": "Freebox Server._fbx-api._tcp.local.",
+    "properties": {
+        "_raw": {
+            "api_version": b"8.0",
+            "device_type": b"FreeboxServer1,2",
+            "api_base_url": b"/api/",
+            "uid": b"b15ab20debb399f95001a9ca207d2777",
+            "https_available": b"1",
+            "https_port": b"51678",
+            "box_model": b"fbxgw-r2/full",
+            "box_model_name": b"Freebox Server (r2)",
+            "api_domain": b"61ko051s.fbxos.fr",
+        },
+        "api_version": "8.0",
+        "device_type": "FreeboxServer1,2",
+        "api_base_url": "/api/",
+        "uid": "b15ab20debb399f95001a9ca207d2777",
+        "https_available": "1",
+        "https_port": "51678",
+        "box_model": "fbxgw-r2/full",
+        "box_model_name": "Freebox Server (r2)",
+        "api_domain": "61ko051s.fbxos.fr",
+    },
+}
+
 SSDP = {
     "ssdp_location": "http://192.168.0.254:5678/desc/root",
     "ssdp_st": "urn:schemas-upnp-org:service:WANIPConnection:2",
@@ -148,25 +178,6 @@ class FreeboxFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         return await self.async_step_link()
 
-    # async def async_step_ssdp(self, discovery_info):
-    #     """Handle a discovered Freebox."""
-    #     _LOGGER.warn("async_step_ssdp")
-    #     _LOGGER.debug(discovery_info)
-    #     parsed_url = urlparse(discovery_info[ssdp.ATTR_SSDP_PROPERTIES])
-    #     friendly_name = (
-    #         discovery_info[ssdp.ATTR_UPNP_FRIENDLY_NAME].split("(", 1)[0].strip()
-    #     )
-
-    #     mac = discovery_info[ssdp.ATTR_UPNP_SERIAL].upper()
-    #     # Synology NAS can broadcast on multiple IP addresses, since they can be connected to multiple ethernets.
-    #     # The serial of the NAS is actually its MAC address.
-    #     if self._mac_already_configured(mac):
-    #         return self.async_abort(reason="already_configured")
-
-    #     await self.async_set_unique_id(mac)
-    #     self._abort_if_unique_id_configured()
-    #     return await self.async_step_user()
-
     async def async_step_link(self, user_input=None):
         """Attempt to link with the Freebox router.
 
@@ -221,15 +232,10 @@ class FreeboxFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         host = discovery_info["properties"]["api_domain"]
         port = discovery_info["properties"]["https_port"]
         return await self.async_step_user({CONF_HOST: host, CONF_PORT: port})
+
     async def async_step_ssdp(self, discovery_info: dict):
         """Initialize flow from SSDP."""
         _LOGGER.warn("async_step_ssdp")
         return await self.async_step_user(
             {CONF_HOST: ssdp.ATTR_UPNP_PRESENTATION_URL, CONF_PORT: 80}
         )
-
-    async def async_step_discovery(self, discovery_info):
-        """Initialize flow from discovery."""
-        _LOGGER.warn("async_step_discovery")
-        # _LOGGER.debug(discovery_info)
-        return await self.async_step_user(discovery_info)
