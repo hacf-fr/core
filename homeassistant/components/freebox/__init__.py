@@ -1,4 +1,4 @@
-"""Support for Freebox devices (Freebox v6 and Freebox mini 4K)."""
+"""Support for Freebox devices (Freebox v6, Delta and Freebox mini 4K)."""
 import logging
 
 import voluptuous as vol
@@ -8,13 +8,17 @@ from homeassistant.const import CONF_HOST, CONF_PORT, EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 
-from .const import DOMAIN, PLATFORMS, SERVICE_REBOOT
+from .const import DOMAIN, PLATFORMS, SERVICE_REBOOT, CONF_WITH_HOME
 from .router import FreeboxRouter
 
 _LOGGER = logging.getLogger(__name__)
 
 FREEBOX_SCHEMA = vol.Schema(
-    {vol.Required(CONF_HOST): cv.string, vol.Required(CONF_PORT): cv.port}
+    {
+        vol.Required(CONF_HOST): cv.string,
+        vol.Required(CONF_PORT): cv.port,
+        vol.Optional(CONF_WITH_HOME, default=False): cv.boolean
+    }
 )
 
 CONFIG_SCHEMA = vol.Schema(
@@ -24,7 +28,6 @@ CONFIG_SCHEMA = vol.Schema(
     ),
     extra=vol.ALLOW_EXTRA,
 )
-
 
 async def async_setup(hass, config):
     """Set up the Freebox integration."""
@@ -46,6 +49,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.unique_id] = router
+    router._option_listener = entry.add_update_listener(options_update_listener)
 
     hass.config_entries.async_setup_platforms(entry, PLATFORMS)
 
@@ -76,3 +80,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
         hass.services.async_remove(DOMAIN, SERVICE_REBOOT)
 
     return unload_ok
+
+
+async def options_update_listener(hass: HomeAssistant, entry: ConfigEntry):
+    """Handle options update."""
+    router = hass.data[DOMAIN][entry.unique_id]
+    await router.remove_home_devices(entry)
+    await hass.config_entries.async_reload(entry.entry_id)
+
