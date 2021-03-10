@@ -5,7 +5,7 @@ import time
 from homeassistant.core import callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.components.cover import CoverEntity, DEVICE_CLASS_SHUTTER, DEVICE_CLASS_AWNING, DEVICE_CLASS_GARAGE
+from homeassistant.components.cover import CoverEntity, ATTR_CURRENT_POSITION, ATTR_POSITION, DEVICE_CLASS_SHUTTER, DEVICE_CLASS_AWNING, DEVICE_CLASS_GARAGE
 from .const import DOMAIN
 from .base_class import FreeboxHomeBaseClass
 
@@ -137,7 +137,9 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
         return self._current_position == 0
 
     async def async_set_cover_position(self, **kwargs):
-        """Move the cover to a specific position."""
+        """Move the cover to a specific position."""        
+        #for key in kwargs:
+        #    _LOGGER.warning("Kwargs: " + key + " " + str(kwargs[key]))            
         await self.set_home_endpoint_value(self._command_set_position, {"value": 100 - kwargs[ATTR_POSITION]})
         self._current_position = 100 - kwargs[ATTR_POSITION]
         self.async_write_ha_state()
