@@ -137,9 +137,7 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
         return self._current_position == 0
 
     async def async_set_cover_position(self, **kwargs):
-        """Move the cover to a specific position."""        
-        #for key in kwargs:
-        #    _LOGGER.warning("Kwargs: " + key + " " + str(kwargs[key]))            
+        """Move the cover to a specific position."""
         await self.set_home_endpoint_value(self._command_set_position, {"value": kwargs[ATTR_POSITION]})
         self._current_position = kwargs[ATTR_POSITION]
         self.async_write_ha_state()
@@ -165,4 +163,5 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
     async def async_update_node(self):
         slot    = self.get_value("slot", "position_set")
         signal  = self.get_value("signal", "position_set")
-        _LOGGER.warning("Position Garage [" + str(slot) + "/" + str(signal) + "]")
+        state  = self.get_value("signal", "state")
+        _LOGGER.warning("Position Garage [" + str(slot) + "/" + str(signal) + "] with state: " + str(state))
