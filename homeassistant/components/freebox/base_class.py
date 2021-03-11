@@ -55,7 +55,7 @@ class FreeboxHomeBaseClass(Entity):
             self._manufacturer  = "Somfy"
             self._model         = "RTS"
 
-        async_dispatcher_connect(self._hass, f"{DOMAIN}-{self._router._host}-device-update", self.async_update_signal)
+        async_dispatcher_connect(self._hass, self._router.signal_home_device_update, self.async_update_signal)
 
     @property
     def unique_id(self) -> str:
@@ -79,7 +79,6 @@ class FreeboxHomeBaseClass(Entity):
             self._name  = self._node["label"].strip()
         await self.async_update_node()
         self.async_write_ha_state()
-        pass
 
     @property
     def available(self):

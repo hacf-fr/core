@@ -1,5 +1,6 @@
 """Support for motion detector, door opener detector and check for sensor plastic cover """
 import logging
+import asyncio
 
 from typing import Dict, Optional
 from homeassistant.core import callback
@@ -50,7 +51,7 @@ def add_entities(hass, router, async_add_entities, tracked):
         async_add_entities(new_tracked, True)
 
 
-''' Freebox moition detector sensor '''
+''' Freebox motion detector sensor '''
 class FreeboxPir(FreeboxHomeBaseClass, BinarySensorEntity):
 
     def __init__(self, hass, router: FreeboxRouter, node: Dict[str, any]) -> None:
@@ -59,12 +60,21 @@ class FreeboxPir(FreeboxHomeBaseClass, BinarySensorEntity):
         self._command_trigger = self.get_command_id(node['type']['endpoints'], "signal", "trigger")
         self._detection = False
         self.start_watcher(timedelta(seconds=2))
+        self._had_timeout = False
 
     async def async_watcher(self, now: Optional[datetime] = None) -> None:
-        detection = await self.get_home_endpoint_value(self._command_trigger)
-        if( self._detection == detection ):
-            self._detection = not detection
-            self.async_write_ha_state()
+        try:
+            detection = await self.get_home_endpoint_value(self._command_trigger)
+            self._had_timeout = False
+            if( self._detection == detection ):
+                self._detection = not detection
+                self.async_write_ha_state()
+        except TimeoutError as error:
+            if( self._had_timeout ):
+                _LOGGER.warning("Freebox API Timeout")
+                self._had_timeout = False
+            else:
+                self._had_timeout = True
 
     @property
     def is_on(self):

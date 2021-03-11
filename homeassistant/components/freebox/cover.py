@@ -140,19 +140,19 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
         """Move the cover to a specific position."""        
         #for key in kwargs:
         #    _LOGGER.warning("Kwargs: " + key + " " + str(kwargs[key]))            
-        await self.set_home_endpoint_value(self._command_set_position, {"value": 100 - kwargs[ATTR_POSITION]})
-        self._current_position = 100 - kwargs[ATTR_POSITION]
+        await self.set_home_endpoint_value(self._command_set_position, {"value": kwargs[ATTR_POSITION]})
+        self._current_position = kwargs[ATTR_POSITION]
         self.async_write_ha_state()
 
     async def async_open_cover(self, **kwargs):
         """Open cover."""
-        await self.set_home_endpoint_value(self._command_set_position, {"value": 0})
+        await self.set_home_endpoint_value(self._command_set_position, {"value": 100})
         self._current_position = 100
         self.async_write_ha_state()
 
     async def async_close_cover(self, **kwargs):
         """Close cover."""
-        await self.set_home_endpoint_value(self._command_set_position, {"value": 100})
+        await self.set_home_endpoint_value(self._command_set_position, {"value": 0})
         self._current_position = 0
         self.async_write_ha_state()
 

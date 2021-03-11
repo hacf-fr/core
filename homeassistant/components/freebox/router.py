@@ -207,7 +207,7 @@ class FreeboxRouter:
 
         self._warning_once = True
         
-        async_dispatcher_send(self.hass, f"{DOMAIN}-{self._host}-device-update")
+        async_dispatcher_send(self.hass,  self.signal_home_device_update)
 
         if new_device:
             async_dispatcher_send(self.hass, self.signal_home_device_new)
@@ -249,6 +249,11 @@ class FreeboxRouter:
     def signal_home_device_new(self) -> str:
         """Event specific per Freebox entry to signal new home device."""
         return f"{DOMAIN}-{self._host}-home-device-new"
+
+    @property
+    def signal_home_device_update(self) -> str:
+        """Event specific per Freebox entry to signal update in home devices."""
+        return f"{DOMAIN}-{self._host}-home-device-update"
 
     @property
     def signal_device_update(self) -> str:
