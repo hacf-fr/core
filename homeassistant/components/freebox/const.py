@@ -96,6 +96,13 @@ DEVICE_ICONS = {
 
 # Home config
 VALUE_NOT_SET = -1
-CONF_WITH_HOME = "with_home_api"
+CONF_HAS_HOME = "has_home_api"
+CONF_USE_HOME = "use_home_api"
+
 PERMISSION_DEFAULT  = 1
 PERMISSION_HOME     = 2
+
+STATUS_PERMISSION_ERROR = 0
+STATUS_OK               = 1
+STATUS_HAS_HOME         = 2
+

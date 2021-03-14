@@ -8,7 +8,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT, EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 
-from .const import DOMAIN, PLATFORMS, SERVICE_REBOOT, CONF_WITH_HOME
+from .const import DOMAIN, PLATFORMS, SERVICE_REBOOT, CONF_USE_HOME
 from .router import FreeboxRouter
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ FREEBOX_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): cv.string,
         vol.Required(CONF_PORT): cv.port,
-        vol.Optional(CONF_WITH_HOME, default=False): cv.boolean
+        vol.Optional(CONF_USE_HOME, default=False): cv.boolean
     }
 )
 
@@ -84,7 +84,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 async def options_update_listener(hass: HomeAssistant, entry: ConfigEntry):
     """Handle options update."""
-    router = hass.data[DOMAIN][entry.unique_id]
-    await router.remove_home_devices(entry)
+    #router = hass.data[DOMAIN][entry.unique_id]
+    #await router.remove_home_devices(entry)
     await hass.config_entries.async_reload(entry.entry_id)
 

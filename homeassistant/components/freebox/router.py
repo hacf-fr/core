@@ -28,7 +28,7 @@ from .const import (
     DOMAIN,
     STORAGE_KEY,
     STORAGE_VERSION,
-    CONF_WITH_HOME
+    CONF_USE_HOME
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -61,8 +61,8 @@ class FreeboxRouter:
         self._entry = entry
         self._host = entry.data[CONF_HOST]
         self._port = entry.data[CONF_PORT]
-        #self._use_home = entry.options.get(CONF_WITH_HOME, False)
-        self._use_home = entry.options.get(CONF_WITH_HOME, entry.data.get(CONF_WITH_HOME, False))
+        #self._use_home = entry.options.get(CONF_USE_HOME, False)
+        self._use_home = entry.options.get(CONF_USE_HOME, entry.data.get(CONF_USE_HOME, False))
 
         self._api: Freepybox = None
         self.name = None
@@ -80,7 +80,6 @@ class FreeboxRouter:
         self._unsub_dispatcher = None
         self._option_listener = None
         self.listeners = []
-        self.home_device_uids = []
         self._warning_once = False
 
     async def setup(self) -> None:
@@ -274,21 +273,3 @@ class FreeboxRouter:
     def wifi(self) -> Wifi:
         """Return the wifi."""
         return self._api.wifi
-
-    async def remove_home_devices(self,config_entry_id) -> None: 
-        #ent_reg = await self.hass.helpers.entity_registry.async_get_registry()
-        #for uid in self.home_device_uids:
-            #entity = ent_reg.async_get(uid)
-            #ent_reg.async_update_entity(entity.entity_id, disabled_by="device")
-            #ent_reg.async_remove(entity.entity_id)
-            #_LOGGER.warning("remove entity: " + str(uid))
-            #ent_reg.async_remove(uid)
-
-        #dev_reg = await self.hass.helpers.device_registry.async_get_registry()
-        #for uid in self.home_device_uids:
-            #device = dev_reg.async_get_or_create(config_entry_id=config_entry_id, identifiers={(DOMAIN, uid)})
-            #_LOGGER.warning("remove device: " + uid + "/" + device.id)
-            #dev_reg.async_remove_device(device.id)
-        
-        self.home_device_uids = []
-

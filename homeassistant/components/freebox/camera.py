@@ -85,11 +85,12 @@ def add_entities(hass, router, async_add_entities, tracked):
 class FreeboxCamera(FreeboxHomeBaseClass, FFmpegCamera):
     def __init__(self, hass, router, node):
         """Initialize a camera."""
+
         super().__init__(hass, router, node)
 
         device_info = {CONF_NAME: node["label"].strip(),CONF_INPUT: node["props"]["Stream"],CONF_EXTRA_ARGUMENTS: DEFAULT_ARGUMENTS }
         FFmpegCamera.__init__(self, hass, device_info)
-        
+
         self._supported_features        = SUPPORT_STREAM
         self._command_flip              = self.get_command_id(node['show_endpoints'], "slot", "flip")
         self._command_motion_detection  = self.get_command_id(node['type']['endpoints'], "slot", "detection")

@@ -7,7 +7,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.const import CONF_HOST, CONF_PORT
 
-from .const import DOMAIN, CONF_WITH_HOME, PERMISSION_DEFAULT, PERMISSION_HOME
+from .const import DOMAIN, CONF_USE_HOME, CONF_HAS_HOME, PERMISSION_DEFAULT, PERMISSION_HOME, STATUS_PERMISSION_ERROR, STATUS_OK, STATUS_HAS_HOME
 from .router import get_api, reset_api
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,7 +23,8 @@ class FreeboxFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize Freebox config flow."""
         self._host = None
         self._port = None
-        self._with_home = False
+        self._has_home = False
+        self._use_home = False
 
     @staticmethod
     @callback
@@ -74,10 +75,13 @@ class FreeboxFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_show_form(step_id="link")
 
         errors = {}
-        if( await check_freebox_permission(self.hass, self._host, self._port, PERMISSION_DEFAULT, errors) ):
-            data_schema=vol.Schema({vol.Required(CONF_WITH_HOME, default=self._with_home): bool})
+        status = await check_freebox_permission(self.hass, self._host, self._port, PERMISSION_DEFAULT, errors)
+        if( status == STATUS_HAS_HOME ):
+            self._has_home = True
+            data_schema=vol.Schema({vol.Required(CONF_USE_HOME, default=self._use_home): bool})
             return self.async_show_form(step_id="option_home", data_schema=data_schema)
-
+        elif( status == STATUS_OK ):
+            return self.async_create_entry(title=self._host,data={CONF_HOST: self._host, CONF_PORT: self._port, CONF_USE_HOME: self._use_home, CONF_HAS_HOME: self._has_home})
         return self.async_show_form(step_id="link", errors=errors)
 
     async def async_step_option_home(self, user_input=None):
@@ -85,14 +89,14 @@ class FreeboxFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is None:
             return self.async_show_form(step_id="link")
             
-        self._with_home = user_input[CONF_WITH_HOME]
-        if( self._with_home == False):
-            return self.async_create_entry(title=self._host,data={CONF_HOST: self._host, CONF_PORT: self._port, CONF_WITH_HOME: self._with_home})
+        self._use_home = user_input[CONF_USE_HOME]
+        if( self._use_home == False):
+            return self.async_create_entry(title=self._host,data={CONF_HOST: self._host, CONF_PORT: self._port, CONF_USE_HOME: self._use_home, CONF_HAS_HOME: self._has_home})
         
         errors = {}
-        if( await check_freebox_permission(self.hass, self._host, self._port, PERMISSION_HOME, errors) ):
-            return self.async_create_entry(title=self._host,data={CONF_HOST: self._host, CONF_PORT: self._port, CONF_WITH_HOME: self._with_home})
-        data_schema=vol.Schema({vol.Required(CONF_WITH_HOME, default=self._with_home): bool})
+        if( await check_freebox_permission(self.hass, self._host, self._port, PERMISSION_DEFAULT, errors) == STATUS_HAS_HOME ):
+            return self.async_create_entry(title=self._host,data={CONF_HOST: self._host, CONF_PORT: self._port, CONF_USE_HOME: self._use_home, CONF_HAS_HOME: self._has_home})
+        data_schema=vol.Schema({vol.Required(CONF_USE_HOME, default=self._use_home): bool})
         return self.async_show_form(step_id="option_home", data_schema=data_schema, errors=errors)
 
 
@@ -116,23 +120,27 @@ class FreeboxOptionsFlowHandler(config_entries.OptionsFlow):
         self.entry = entry
         self._host = entry.data[CONF_HOST]
         self._port = entry.data[CONF_PORT]
-        self._with_home = entry.options.get(CONF_WITH_HOME, entry.data.get(CONF_WITH_HOME, False))
+        self._has_home = entry.data.get(CONF_HAS_HOME, False)
+        self._use_home = entry.options.get(CONF_USE_HOME, entry.data.get(CONF_USE_HOME, False))
 
 
     async def async_step_init(self, user_input=None):
         ''' Check if the user wants to use the Home API '''
-        errors = {}
 
+        if( not self._has_home ):
+            return self.async_create_entry(title=self._host,data={CONF_USE_HOME: self._use_home})
+
+        errors = {}
         if user_input is not None:
-            self._with_home = user_input[CONF_WITH_HOME]
-            if( self._with_home == False):
+            self._use_home = user_input[CONF_USE_HOME]
+            if( self._use_home == False):
                 return self.async_create_entry(title="", data=user_input)
             if( await check_freebox_permission(self.hass, self._host, self._port, PERMISSION_HOME, errors) ):
-                return self.async_create_entry(title=self._host,data={CONF_WITH_HOME: self._with_home})
-            data_schema = vol.Schema({vol.Required(CONF_WITH_HOME, default=self._with_home): bool})
+                return self.async_create_entry(title=self._host,data={CONF_USE_HOME: self._use_home})
+            data_schema = vol.Schema({vol.Required(CONF_USE_HOME, default=self._use_home): bool})
             return self.async_show_form(step_id="init", data_schema=data_schema, errors=errors)
 
-        data_schema = vol.Schema({vol.Required(CONF_WITH_HOME, default=self._with_home): bool})
+        data_schema = vol.Schema({vol.Required(CONF_USE_HOME, default=self._use_home): bool})
         return self.async_show_form(step_id="init", data_schema=data_schema, errors=errors)
 
 
@@ -143,17 +151,20 @@ async def check_freebox_permission(hass, host, port, check_type, errors = {},loo
     try:
         await fbx.open(host, port)
         if( check_type == PERMISSION_DEFAULT ):
-            await fbx.system.get_config()
+            config = await fbx.system.get_config()
+            _LOGGER.info(config)
+            has_home_automation = config.get("model_info", {}).get("has_home_automation", False)
             await fbx.lan.get_hosts_list()
             await hass.async_block_till_done()
+            if( has_home_automation ):
+                return STATUS_HAS_HOME
         else:
             await fbx.home.get_home_nodes()
-        await fbx.close()
-        return True
+        return STATUS_OK
 
     except AuthorizationError as error:
         # We must remove the existing config file and do a single connection retry
-        # It's necessary when the user remive the application into the freebox UI => we must setup a new access 
+        # It's necessary when the user remove the application into the freebox UI => we must setup a new access 
         await reset_api(hass, host)
         if( loop == True):
             return await check_freebox_permission(hass, host, port, check_type, errors, False)
@@ -171,5 +182,7 @@ async def check_freebox_permission(hass, host, port, check_type, errors = {},loo
         _LOGGER.exception("Unknown error connecting with Freebox router at %s. %s", host, error)
         errors["base"] = "unknown"
 
-    await fbx.close()
-    return False
+    finally:
+        await fbx.close()
+
+    return STATUS_PERMISSION_ERROR

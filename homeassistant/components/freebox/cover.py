@@ -113,7 +113,8 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
         self._device_class          = DEVICE_CLASS_AWNING
         #self._command_state         = self.get_command_id(node['show_endpoints'], "signal", "state")
         #self._current_position      = self.get_value("signal", "state")
-        self._current_position      = None
+        #self._current_position      = None
+        self._current_position      = self.get_value("signal", "position_set")
 
         if("Porte_Garage" in node["type"]["icon"]):
             self._device_class = DEVICE_CLASS_GARAGE
@@ -161,6 +162,8 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
         self.async_write_ha_state()
 
     async def async_update_node(self):
+        self._current_position = self.get_value("signal", "position_set")
+
         slot    = self.get_value("slot", "position_set")
         signal  = self.get_value("signal", "position_set")
         state  = self.get_value("signal", "state")

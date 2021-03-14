@@ -33,7 +33,7 @@ class FreeboxHomeBaseClass(Entity):
         self._watcher = None
 
         if(sub_node != None):
-            self._name = sub_node["label"].strip()
+            self._name = node["label"].strip() + " " + sub_node["label"].strip()
             self._unique_id += "-" + sub_node["name"].strip()
 
         self._available = True
@@ -75,8 +75,11 @@ class FreeboxHomeBaseClass(Entity):
 
     async def async_update_signal(self):
         self._node = self._router.home_devices[self._id]
+        # Update NAME
         if(self._sub_node is None):
-            self._name  = self._node["label"].strip()
+            self._name = self._node["label"].strip()
+        else:
+            self._name = self._node["label"].strip() + " " + self._sub_node["label"].strip()
         await self.async_update_node()
         self.async_write_ha_state()
 
@@ -158,11 +161,11 @@ class FreeboxHomeBaseClass(Entity):
         self.async_write_ha_state()
 
     async def async_added_to_hass(self):
-        #_LOGGER.warning("Home node added to hass: " + str(self.entity_id))
-        self._router.home_device_uids.append(self.entity_id)
+        _LOGGER.debug("Home node added to hass: " + str(self.entity_id))
+        #self._router.home_device_uids.append(self.entity_id)
 
     async def async_will_remove_from_hass(self):
         """When entity will be removed from hass."""
         self.stop_watcher()
         await super().async_will_remove_from_hass()
-        #_LOGGER.warning("Home node removed from to hass: " + str(self.entity_id))
+        _LOGGER.debug("Home node removed from to hass: " + str(self.entity_id))

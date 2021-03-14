@@ -29,7 +29,7 @@
                 "title": "Gestion de la domotique",
                 "description": "Cette option requiert l’activation d’une permission supplémentaire dans l’interface http://mafreebox.freebox.fr/\nSelectionnez: \n\"Paramètres de la freebox\" >> \"Gestion des acccés\" >> \"Applications\"\net donnez la permission: \"Gestion de l'alarme et maison connectée\"",
                 "data": {
-                    "with_home_api": "Controller les appareils Freebox Home (volets, lumières, alarme...)"
+                    "use_home_api": "Controller les appareils Freebox Home (volets, lumières, alarme...)"
                 }
             }
         }
@@ -40,7 +40,7 @@
                 "title": "Gestion de la domotique",
                 "description": "Cette option requiert l’activation d’une permission supplémentaire dans l’interface http://mafreebox.freebox.fr/\nSelectionnez: \n\"Paramètres de la freebox\" >> \"Gestion des acccés\" >> \"Applications\"\net donnez la permission: \"Gestion de l'alarme et maison connectée\"",
                 "data": {
-                    "with_home_api": "Controller les appareils Freebox Home (volets, lumières, alarme...)"
+                    "use_home_api": "Controller les appareils Freebox Home (volets, lumières, alarme...)"
                 }
             }
         },
