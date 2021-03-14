@@ -5,7 +5,6 @@ import time
 from homeassistant.core import callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.components.cover import CoverEntity, ATTR_CURRENT_POSITION, ATTR_POSITION, DEVICE_CLASS_SHUTTER, DEVICE_CLASS_AWNING, DEVICE_CLASS_GARAGE
 from .const import DOMAIN
 from .base_class import FreeboxHomeBaseClass
 
@@ -14,6 +13,18 @@ from homeassistant.const import (
     STATE_CLOSING,
     STATE_OPEN,
     STATE_OPENING,
+)
+from homeassistant.components.cover import (
+    ATTR_CURRENT_POSITION,
+    ATTR_POSITION,
+    DEVICE_CLASS_SHUTTER,
+    DEVICE_CLASS_AWNING,
+    DEVICE_CLASS_GARAGE,
+    SUPPORT_CLOSE,
+    SUPPORT_OPEN,
+    SUPPORT_SET_POSITION,
+    SUPPORT_STOP,
+    CoverEntity,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -110,18 +121,23 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
         super().__init__(hass, router, node)
         self._command_set_position  = self.get_command_id(node['show_endpoints'], "slot", "position_set")
         self._command_stop          = self.get_command_id(node['show_endpoints'], "slot", "stop")
-        self._device_class          = DEVICE_CLASS_AWNING
-        #self._command_state         = self.get_command_id(node['show_endpoints'], "signal", "state")
-        #self._current_position      = self.get_value("signal", "state")
-        #self._current_position      = None
         self._current_position      = self.get_value("signal", "position_set")
+        self._device_class          = DEVICE_CLASS_AWNING
+        self._supported_features    = SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_SET_POSITION | SUPPORT_STOP
 
         if("Porte_Garage" in node["type"]["icon"]):
             self._device_class = DEVICE_CLASS_GARAGE
+            self._supported_features  = SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_STOP
 
     @property
     def device_class(self) -> str:
         return self._device_class
+
+    @property
+    def supported_features(self):
+        """Flag supported features."""
+        return self._supported_features
+
 
     @property
     def current_cover_position(self):
@@ -163,8 +179,9 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
 
     async def async_update_node(self):
         self._current_position = self.get_value("signal", "position_set")
-
+        '''
         slot    = self.get_value("slot", "position_set")
         signal  = self.get_value("signal", "position_set")
         state  = self.get_value("signal", "state")
         _LOGGER.warning("Position Garage [" + str(slot) + "/" + str(signal) + "] with state: " + str(state))
+        '''
