@@ -52,6 +52,9 @@ def add_entities(hass, router, async_add_entities, tracked):
         if (node["category"]=="basic_shutter"):
             new_tracked.append(FreeboxBasicShutter(hass, router, node))
             tracked.add(nodeId)
+        elif (node["category"]=="shutter"):
+            new_tracked.append(FreeboxShutter(hass, router, node))
+            tracked.add(nodeId)
         elif (node["category"]=="opener"):
             new_tracked.append(FreeboxOpener(hass, router, node))
             tracked.add(nodeId)
@@ -113,6 +116,68 @@ class FreeboxBasicShutter(FreeboxHomeBaseClass,CoverEntity):
             return None
 
 
+class FreeboxShutter(FreeboxHomeBaseClass,CoverEntity):
+
+    def __init__(self, hass, router, node) -> None:
+        """Initialize a Cover"""
+        super().__init__(hass, router, node)
+        self._command_set_position  = self.get_command_id(node['show_endpoints'], "slot", "position_set")
+        self._command_stop          = self.get_command_id(node['show_endpoints'], "slot", "stop")
+        self._command_postion       = self.get_command_id(node['type']['endpoints'], "slot", "position")
+        self._current_position      = 100 - self.get_value("signal", "position_set")
+
+    @property
+    def device_class(self) -> str:
+        return DEVICE_CLASS_SHUTTER
+
+    @property
+    def current_cover_position(self):
+        """Return current position of cover.
+        None is unknown, 0 is closed, 100 is fully open.
+        """
+        if( self._current_position == None ):
+            return 50
+        return self._current_position
+
+    @property
+    def is_closed(self):
+        """Return if the cover is closed or not."""
+        return self.current_cover_position == 0
+
+    async def async_set_cover_position(self, **kwargs):
+        """Move the cover to a specific position."""
+        await self.set_home_endpoint_value(self._command_set_position, {"value": (100 - kwargs[ATTR_POSITION])})
+        self._current_position = kwargs[ATTR_POSITION]
+        self.async_write_ha_state()
+
+    async def async_open_cover(self, **kwargs):
+        """Open cover."""
+        await self.set_home_endpoint_value(self._command_set_position, {"value": 0})
+        self._current_position = 100
+        self.async_write_ha_state()
+
+    async def async_close_cover(self, **kwargs):
+        """Close cover."""
+        await self.set_home_endpoint_value(self._command_set_position, {"value": 100})
+        self._current_position = 0
+        self.async_write_ha_state()
+
+    async def async_stop_cover(self, **kwargs):
+        """Stop cover."""
+        await self.set_home_endpoint_value(self._command_stop, {"value": None})
+        self._current_position = None
+        self.async_write_ha_state()
+
+    async def async_update_node(self):
+        self._current_position = 100 - self.get_value("signal", "position_set")
+        
+        value_api = await self.get_home_endpoint_value(self._command_postion)
+        slot    = self.get_value("slot", "position_set")
+        signal  = self.get_value("signal", "position_set")
+        state   = self.get_value("signal", "state")
+        _LOGGER.warning("Details [" + str(slot) + "/" + str(signal) + "/" + str(value_api) + "] with state: " + str(state))
+    
+
 
 class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
 
@@ -121,6 +186,7 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
         super().__init__(hass, router, node)
         self._command_set_position  = self.get_command_id(node['show_endpoints'], "slot", "position_set")
         self._command_stop          = self.get_command_id(node['show_endpoints'], "slot", "stop")
+        self._command_postion       = self.get_command_id(node['type']['endpoints'], "slot", "position")
         self._current_position      = self.get_value("signal", "position_set")
         self._device_class          = DEVICE_CLASS_AWNING
         self._supported_features    = SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_SET_POSITION | SUPPORT_STOP
@@ -151,7 +217,7 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
     @property
     def is_closed(self):
         """Return if the cover is closed or not."""
-        return self._current_position == 0
+        return self.current_cover_position == 0
 
     async def async_set_cover_position(self, **kwargs):
         """Move the cover to a specific position."""
@@ -185,3 +251,9 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
         state  = self.get_value("signal", "state")
         _LOGGER.warning("Position Garage [" + str(slot) + "/" + str(signal) + "] with state: " + str(state))
         '''
+
+        value_api = await self.get_home_endpoint_value(self._command_postion)
+        slot    = self.get_value("slot", "position_set")
+        signal  = self.get_value("signal", "position_set")
+        state  = self.get_value("signal", "state")
+        _LOGGER.warning("Details [" + str(slot) + "/" + str(signal) + "/" + str(value_api) + "] with state: " + str(state))

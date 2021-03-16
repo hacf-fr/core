@@ -175,7 +175,7 @@ async def check_freebox_permission(hass, host, port, check_type, errors = {},loo
         errors["base"] = "insufficient_permission"
 
     except HttpRequestError:
-        _LOGGER.error("Error connecting to the Freebox router at %s", host)
+        _LOGGER.error("Error connecting to the Freebox router at %s:%s. %s", host, str(port), error)
         errors["base"] = "cannot_connect"
 
     except Exception as error:
