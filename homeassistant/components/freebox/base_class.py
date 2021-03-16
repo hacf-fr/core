@@ -54,6 +54,9 @@ class FreeboxHomeBaseClass(Entity):
         elif( node["type"].get("inherit", None)=="node::rts"):
             self._manufacturer  = "Somfy"
             self._model         = "RTS"
+        elif( node["type"].get("inherit", None)=="node::ios"):
+            self._manufacturer  = "Somfy"
+            self._model         = "IOHome"
 
         async_dispatcher_connect(self._hass, self._router.signal_home_device_update, self.async_update_signal)
 

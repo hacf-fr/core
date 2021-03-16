@@ -2,6 +2,7 @@
 import logging
 import json
 import time
+import base64
 from homeassistant.core import callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
@@ -52,7 +53,7 @@ def add_entities(hass, router, async_add_entities, tracked):
         if (node["category"]=="basic_shutter"):
             new_tracked.append(FreeboxBasicShutter(hass, router, node))
             tracked.add(nodeId)
-        elif (node["category"]=="shutter"):
+        elif (node["category"]=="shutter" or node["category"]=="opener"):
             new_tracked.append(FreeboxShutter(hass, router, node))
             tracked.add(nodeId)
         elif (node["category"]=="opener"):
@@ -116,84 +117,31 @@ class FreeboxBasicShutter(FreeboxHomeBaseClass,CoverEntity):
             return None
 
 
+
 class FreeboxShutter(FreeboxHomeBaseClass,CoverEntity):
 
     def __init__(self, hass, router, node) -> None:
         """Initialize a Cover"""
+        # For the dev I got
+        # DEVICE_CLASS_SHUTTER = RTS
+        # DEVICE_CLASS_GARAGE = IOHome
         super().__init__(hass, router, node)
         self._command_set_position  = self.get_command_id(node['show_endpoints'], "slot", "position_set")
         self._command_stop          = self.get_command_id(node['show_endpoints'], "slot", "stop")
-        self._command_postion       = self.get_command_id(node['type']['endpoints'], "slot", "position")
-        self._current_position      = 100 - self.get_value("signal", "position_set")
-
-    @property
-    def device_class(self) -> str:
-        return DEVICE_CLASS_SHUTTER
-
-    @property
-    def current_cover_position(self):
-        """Return current position of cover.
-        None is unknown, 0 is closed, 100 is fully open.
-        """
-        if( self._current_position == None ):
-            return 50
-        return self._current_position
-
-    @property
-    def is_closed(self):
-        """Return if the cover is closed or not."""
-        return self.current_cover_position == 0
-
-    async def async_set_cover_position(self, **kwargs):
-        """Move the cover to a specific position."""
-        await self.set_home_endpoint_value(self._command_set_position, {"value": (100 - kwargs[ATTR_POSITION])})
-        self._current_position = kwargs[ATTR_POSITION]
-        self.async_write_ha_state()
-
-    async def async_open_cover(self, **kwargs):
-        """Open cover."""
-        await self.set_home_endpoint_value(self._command_set_position, {"value": 0})
-        self._current_position = 100
-        self.async_write_ha_state()
-
-    async def async_close_cover(self, **kwargs):
-        """Close cover."""
-        await self.set_home_endpoint_value(self._command_set_position, {"value": 100})
-        self._current_position = 0
-        self.async_write_ha_state()
-
-    async def async_stop_cover(self, **kwargs):
-        """Stop cover."""
-        await self.set_home_endpoint_value(self._command_stop, {"value": None})
-        self._current_position = None
-        self.async_write_ha_state()
-
-    async def async_update_node(self):
-        self._current_position = 100 - self.get_value("signal", "position_set")
-        
-        value_api = await self.get_home_endpoint_value(self._command_postion)
-        slot    = self.get_value("slot", "position_set")
-        signal  = self.get_value("signal", "position_set")
-        state   = self.get_value("signal", "state")
-        _LOGGER.warning("Details [" + str(slot) + "/" + str(signal) + "/" + str(value_api) + "] with state: " + str(state))
-    
-
-
-class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
-
-    def __init__(self, hass, router, node) -> None:
-        """Initialize a Cover"""
-        super().__init__(hass, router, node)
-        self._command_set_position  = self.get_command_id(node['show_endpoints'], "slot", "position_set")
-        self._command_stop          = self.get_command_id(node['show_endpoints'], "slot", "stop")
-        self._command_postion       = self.get_command_id(node['type']['endpoints'], "slot", "position")
-        self._current_position      = self.get_value("signal", "position_set")
-        self._device_class          = DEVICE_CLASS_AWNING
+        self._command_position      = self.get_command_id(node['type']['endpoints'], "slot", "position")
+        self._device_class          = DEVICE_CLASS_SHUTTER
         self._supported_features    = SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_SET_POSITION | SUPPORT_STOP
+        self._invert_position       = True
 
-        if("Porte_Garage" in node["type"]["icon"]):
-            self._device_class = DEVICE_CLASS_GARAGE
-            self._supported_features  = SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_STOP
+        if( node["category"]=="opener" ):
+            self._device_class          = DEVICE_CLASS_AWNING
+
+            if("Porte_Garage" in node["type"]["icon"]): # Dexxo Smart IO
+                self._invert_position     = False
+                self._device_class        = DEVICE_CLASS_GARAGE
+                self._supported_features  = SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_STOP 
+        
+        self.update_current_position()
 
     @property
     def device_class(self) -> str:
@@ -204,14 +152,11 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
         """Flag supported features."""
         return self._supported_features
 
-
     @property
     def current_cover_position(self):
         """Return current position of cover.
         None is unknown, 0 is closed, 100 is fully open.
         """
-        if( self._current_position == None ):
-            return 50
         return self._current_position
 
     @property
@@ -221,39 +166,91 @@ class FreeboxOpener(FreeboxHomeBaseClass,CoverEntity):
 
     async def async_set_cover_position(self, **kwargs):
         """Move the cover to a specific position."""
-        await self.set_home_endpoint_value(self._command_set_position, {"value": kwargs[ATTR_POSITION]})
+        value = 100 - kwargs[ATTR_POSITION] if(self._invert_position) else kwargs[ATTR_POSITION]
+        await self.set_home_endpoint_value(self._command_set_position, {"value": value})
         self._current_position = kwargs[ATTR_POSITION]
         self.async_write_ha_state()
 
     async def async_open_cover(self, **kwargs):
         """Open cover."""
-        await self.set_home_endpoint_value(self._command_set_position, {"value": 100})
+        value = 0 if(self._invert_position) else 100
+        await self.set_home_endpoint_value(self._command_set_position, {"value": value})
         self._current_position = 100
         self.async_write_ha_state()
 
     async def async_close_cover(self, **kwargs):
         """Close cover."""
-        await self.set_home_endpoint_value(self._command_set_position, {"value": 0})
+        value = 100 if(self._invert_position) else 0
+        await self.set_home_endpoint_value(self._command_set_position, {"value": value})
         self._current_position = 0
         self.async_write_ha_state()
 
     async def async_stop_cover(self, **kwargs):
         """Stop cover."""
         await self.set_home_endpoint_value(self._command_stop, {"value": None})
-        self._current_position = None
+        self.update_current_position()
         self.async_write_ha_state()
 
-    async def async_update_node(self):
-        self._current_position = self.get_value("signal", "position_set")
-        '''
-        slot    = self.get_value("slot", "position_set")
-        signal  = self.get_value("signal", "position_set")
-        state  = self.get_value("signal", "state")
-        _LOGGER.warning("Position Garage [" + str(slot) + "/" + str(signal) + "] with state: " + str(state))
-        '''
+    def update_current_position(self):
+        ''' Set the current position '''
+        # Parse current status
+        state           = self.get_value("signal", "state")
+        position_set    = self.get_value("signal", "position_set")
 
-        value_api = await self.get_home_endpoint_value(self._command_postion)
+        hex_value = base64.b64decode(state).hex()
+        if(len(hex_value)!=118):
+            _LOGGER.warning("Invalid state: " + str(state))
+            # Use basic method
+            self._current_position = (100 - position_set) if self._invert_position else position_set
+            return
+
+        # Get the two important values
+        val_1 = hex_value[96:98]
+        val_2 = hex_value[100:102]
+
+        # Open
+        if(val_2 == "00"):
+            self._current_position = 100
+        # Close
+        elif(val_2 == "c8"):
+            self._current_position = 0
+        else:
+            self._current_position = 50
+            _LOGGER.warning("Unkown position: [" + val_1 + "/" + val_2 + "]")
+        
+        #self._current_position = (100 - position_set) if self._invert_position else position_set
+
+
+    async def async_update_node(self):
+
+        self.update_current_position()
+        
+        # Do a log
+        state           = self.get_value("signal", "state")
+        position_set    = self.get_value("signal", "position_set")
+        hex_value = base64.b64decode(state).hex()
+        if(len(hex_value)!=118):
+            _LOGGER.warning("Invalid state: " + str(state))
+            return
+        val_1 = hex_value[96:98]
+        val_2 = hex_value[100:102]
+        value_api = await self.get_home_endpoint_value(self._command_position)
+        _LOGGER.warning("Details [" + str(position_set) + "/" + str(value_api) + "/" + val_1 + "/" + val_2 + "] with state: " + str(state))
+
+
+
+        '''
+        value_api = "" #await self.get_home_endpoint_value(self._command_position)
         slot    = self.get_value("slot", "position_set")
         signal  = self.get_value("signal", "position_set")
-        state  = self.get_value("signal", "state")
-        _LOGGER.warning("Details [" + str(slot) + "/" + str(signal) + "/" + str(value_api) + "] with state: " + str(state))
+        state   = self.get_value("signal", "state")
+        
+        hex_value = base64.b64decode(state).hex()
+        val = ""
+        if(len(hex_value)==118):
+            val_1 = hex_value[96:98]
+            val_2 = hex_value[100:102]
+            val = val_1 +"-"+ val_2
+
+        _LOGGER.warning("Details [" + str(slot) + "/" + str(signal) + "/" + str(value_api) + "/" + val + "] with state: " + str(state))
+        '''
