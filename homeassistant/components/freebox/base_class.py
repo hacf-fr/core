@@ -29,7 +29,6 @@ class FreeboxHomeBaseClass(Entity):
         self._name  = node["label"].strip()
         self._device_name = node["label"].strip()
         self._unique_id = f"{self._router.mac}-node_{self._id}"
-        self._is_device = True
         self._watcher = None
 
         if(sub_node != None):
@@ -48,7 +47,6 @@ class FreeboxHomeBaseClass(Entity):
             self._model     = "F-HADWS01A"
         elif( node["category"]=="kfb" ):
             self._model     = "F-HAKFB01A"
-            self._is_device = True
         elif( node["category"]=="alarm" ):
             self._model     = "F-MSEC07A"
         elif( node["type"].get("inherit", None)=="node::rts"):
@@ -58,7 +56,6 @@ class FreeboxHomeBaseClass(Entity):
             self._manufacturer  = "Somfy"
             self._model         = "IOHome"
 
-        async_dispatcher_connect(self._hass, self._router.signal_home_device_update, self.async_update_signal)
 
     @property
     def unique_id(self) -> str:
@@ -94,8 +91,6 @@ class FreeboxHomeBaseClass(Entity):
     @property
     def device_info(self):
         """Return the device info."""
-        if (self._is_device == False):
-            return None
         return {
             "identifiers": {(DOMAIN, self._id)},
             "name": self._device_name,
@@ -165,10 +160,12 @@ class FreeboxHomeBaseClass(Entity):
 
     async def async_added_to_hass(self):
         _LOGGER.debug("Home node added to hass: " + str(self.entity_id))
+        self._remove_signal_update = async_dispatcher_connect(self._hass, self._router.signal_home_device_update, self.async_update_signal)
         #self._router.home_device_uids.append(self.entity_id)
 
     async def async_will_remove_from_hass(self):
         """When entity will be removed from hass."""
-        self.stop_watcher()
-        await super().async_will_remove_from_hass()
         _LOGGER.debug("Home node removed from to hass: " + str(self.entity_id))
+        self._remove_signal_update()
+        self.stop_watcher()
+        #await super().async_will_remove_from_hass()

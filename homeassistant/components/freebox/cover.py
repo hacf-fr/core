@@ -118,13 +118,13 @@ class FreeboxBasicShutter(FreeboxHomeBaseClass,CoverEntity):
 
 
 
-class FreeboxShutter(FreeboxHomeBaseClass,CoverEntity):
+class FreeboxShutter(FreeboxHomeBaseClass, CoverEntity):
 
     def __init__(self, hass, router, node) -> None:
         """Initialize a Cover"""
         # For the dev I got
-        # DEVICE_CLASS_SHUTTER = RTS
-        # DEVICE_CLASS_GARAGE = IOHome
+        # DEVICE_CLASS_SHUTTER  = RTS
+        # DEVICE_CLASS_GARAGE   = IOHome
         super().__init__(hass, router, node)
         self._command_set_position  = self.get_command_id(node['show_endpoints'], "slot", "position_set")
         self._command_stop          = self.get_command_id(node['show_endpoints'], "slot", "stop")
@@ -139,7 +139,7 @@ class FreeboxShutter(FreeboxHomeBaseClass,CoverEntity):
             if("Porte_Garage" in node["type"]["icon"]): # Dexxo Smart IO
                 self._invert_position     = False
                 self._device_class        = DEVICE_CLASS_GARAGE
-                self._supported_features  = SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_STOP 
+                #self._supported_features  = SUPPORT_OPEN | SUPPORT_CLOSE | SUPPORT_STOP 
         
         self.update_current_position()
 
@@ -200,7 +200,7 @@ class FreeboxShutter(FreeboxHomeBaseClass,CoverEntity):
         hex_value = base64.b64decode(state).hex()
         if(len(hex_value)!=118):
             _LOGGER.warning("Invalid state: " + str(state))
-            # Use basic method
+            # Use basic method to set position
             self._current_position = (100 - position_set) if self._invert_position else position_set
             return
 
@@ -215,16 +215,21 @@ class FreeboxShutter(FreeboxHomeBaseClass,CoverEntity):
         elif(val_2 == "c8"):
             self._current_position = 0
         else:
-            self._current_position = 50
-            _LOGGER.warning("Unkown position: [" + val_1 + "/" + val_2 + "]")
+            # Check if the position current value can be used
+            if( position_set > 0 and position_set < 100 ):
+                self._current_position = (100 - position_set) if self._invert_position else position_set
+            else: # set 50% (because why not!)
+                self._current_position = 50
         
-        #self._current_position = (100 - position_set) if self._invert_position else position_set
-
+        # Dump
+        _LOGGER.debug("Details [" + str(position_set) + "/" + val_1 + "/" + val_2 + "] with state: " + str(state))
+        
 
     async def async_update_node(self):
 
         self.update_current_position()
         
+        '''
         # Do a log
         state           = self.get_value("signal", "state")
         position_set    = self.get_value("signal", "position_set")
@@ -236,21 +241,4 @@ class FreeboxShutter(FreeboxHomeBaseClass,CoverEntity):
         val_2 = hex_value[100:102]
         value_api = await self.get_home_endpoint_value(self._command_position)
         _LOGGER.warning("Details [" + str(position_set) + "/" + str(value_api) + "/" + val_1 + "/" + val_2 + "] with state: " + str(state))
-
-
-
-        '''
-        value_api = "" #await self.get_home_endpoint_value(self._command_position)
-        slot    = self.get_value("slot", "position_set")
-        signal  = self.get_value("signal", "position_set")
-        state   = self.get_value("signal", "state")
-        
-        hex_value = base64.b64decode(state).hex()
-        val = ""
-        if(len(hex_value)==118):
-            val_1 = hex_value[96:98]
-            val_2 = hex_value[100:102]
-            val = val_1 +"-"+ val_2
-
-        _LOGGER.warning("Details [" + str(slot) + "/" + str(signal) + "/" + str(value_api) + "/" + val + "] with state: " + str(state))
         '''
