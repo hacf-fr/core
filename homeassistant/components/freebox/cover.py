@@ -226,19 +226,4 @@ class FreeboxShutter(FreeboxHomeBaseClass, CoverEntity):
         
 
     async def async_update_node(self):
-
         self.update_current_position()
-        
-        '''
-        # Do a log
-        state           = self.get_value("signal", "state")
-        position_set    = self.get_value("signal", "position_set")
-        hex_value = base64.b64decode(state).hex()
-        if(len(hex_value)!=118):
-            _LOGGER.warning("Invalid state: " + str(state))
-            return
-        val_1 = hex_value[96:98]
-        val_2 = hex_value[100:102]
-        value_api = await self.get_home_endpoint_value(self._command_position)
-        _LOGGER.warning("Details [" + str(position_set) + "/" + str(value_api) + "/" + val_1 + "/" + val_2 + "] with state: " + str(state))
-        '''

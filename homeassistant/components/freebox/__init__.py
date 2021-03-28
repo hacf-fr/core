@@ -84,7 +84,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 async def options_update_listener(hass: HomeAssistant, entry: ConfigEntry):
     """Handle options update."""
-    #router = hass.data[DOMAIN][entry.unique_id]
-    #await router.remove_home_devices(entry)
     await hass.config_entries.async_reload(entry.entry_id)
 

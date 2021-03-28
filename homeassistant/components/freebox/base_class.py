@@ -14,10 +14,6 @@ from .router import FreeboxRouter
 
 _LOGGER = logging.getLogger(__name__)
 
-#from threading import Thread, Lock
-#mutex = Lock()
-
-
 class FreeboxHomeBaseClass(Entity):
     def __init__(self, hass, router: FreeboxRouter, node: Dict[str, any], sub_node = None) -> None:
         _LOGGER.debug(node)
@@ -114,25 +110,18 @@ class FreeboxHomeBaseClass(Entity):
         if( command_id == VALUE_NOT_SET ):
             _LOGGER.error("Unable to SET a value through the API. Command is VALUE_NOT_SET")
             return False
-        #mutex.acquire()
-        #try:
         await self._router._api.home.set_home_endpoint_value(self._id, command_id, value)
-        #finally:
-        #    mutex.release()
         return True
 
     async def get_home_endpoint_value(self, command_id):
         if( command_id == VALUE_NOT_SET ):
             _LOGGER.error("Unable to GET a value through the API. Command is VALUE_NOT_SET")
             return VALUE_NOT_SET
-        #mutex.acquire()
         try:
             node = await self._router._api.home.get_home_endpoint_value(self._id, command_id)
         except TimeoutError as error:
             _LOGGER.warning("The Freebox API Timeout during a value retrieval")
             return VALUE_NOT_SET
-        #finally:
-        #    mutex.release()
         return node.get("value", VALUE_NOT_SET)
         
     def get_command_id(self, nodes, ep_type, name ):
@@ -161,11 +150,9 @@ class FreeboxHomeBaseClass(Entity):
     async def async_added_to_hass(self):
         _LOGGER.debug("Home node added to hass: " + str(self.entity_id))
         self._remove_signal_update = async_dispatcher_connect(self._hass, self._router.signal_home_device_update, self.async_update_signal)
-        #self._router.home_device_uids.append(self.entity_id)
 
     async def async_will_remove_from_hass(self):
         """When entity will be removed from hass."""
         _LOGGER.debug("Home node removed from to hass: " + str(self.entity_id))
         self._remove_signal_update()
         self.stop_watcher()
-        #await super().async_will_remove_from_hass()

@@ -73,7 +73,6 @@ class FreeboxAlarm(FreeboxHomeBaseClass, AlarmControlPanelEntity):
     def __init__(self, hass, router: FreeboxRouter, node: Dict[str, any]) -> None:
         """Initialize an Alarm"""
         super().__init__(hass, router, node)
-        #_LOGGER.warning(node)
 
         self._command_trigger   = self.get_command_id(node['type']['endpoints'], "slot", "trigger") # Trigger
         self._command_alarm1    = self.get_command_id(node['type']['endpoints'], "slot", "alarm1") # Alarme principale
@@ -138,20 +137,8 @@ class FreeboxAlarm(FreeboxHomeBaseClass, AlarmControlPanelEntity):
         self.set_state(await self.get_home_endpoint_value(self._command_state))
         self.update_parameters()
 
-    '''
-    async def async_update(self):
-        """Get the state & name and update it."""
-        state = await self.get_home_endpoint_value(self._command_state)
-        #if( state == "idle" and self._unsub_watcher != None):
-        #    self._unsub_watcher()
-        if( state == "idle" ):
-            self.stop_watcher()
-        self.update_parameters(self._router.home_devices[self._id])
-    '''
-
 
     def update_parameters(self):
-
         #Search if Alarm2
         has_alarm2 = False
         for nodeId, local_node in self._router.home_devices.items():
