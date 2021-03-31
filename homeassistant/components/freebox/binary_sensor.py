@@ -122,7 +122,7 @@ class FreeboxDws(FreeboxPir):
 
 class FreeboxSensorCover(FreeboxHomeBaseClass, BinarySensorEntity):
     def __init__(self, hass, router: FreeboxRouter, node: Dict[str, any]) -> None:
-        """Initialize a Cover for anothe Device"""
+        """Initialize a Cover for another Device"""
         # Get cover node
         cover_node = next(
             filter(
