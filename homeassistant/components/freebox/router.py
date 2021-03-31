@@ -24,11 +24,11 @@ from homeassistant.util import slugify
 from .const import (
     API_VERSION,
     APP_DESC,
+    CONF_USE_HOME,
     CONNECTION_SENSORS,
     DOMAIN,
     STORAGE_KEY,
     STORAGE_VERSION,
-    CONF_USE_HOME
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -47,11 +47,14 @@ async def get_api(hass: HomeAssistant, host: str) -> Freepybox:
 
     return Freepybox(APP_DESC, token_file, API_VERSION)
 
+
 async def reset_api(hass: HomeAssistantType, host: str):
     """Delete the config file to be able to restart a new pairing process."""
     freebox_path = hass.helpers.storage.Store(STORAGE_VERSION, STORAGE_KEY).path
     token_file = Path(f"{freebox_path}/{slugify(host)}.conf")
     token_file.unlink(True)
+
+
 class FreeboxRouter:
     """Representation of a Freebox router."""
 
@@ -61,8 +64,10 @@ class FreeboxRouter:
         self._entry = entry
         self._host = entry.data[CONF_HOST]
         self._port = entry.data[CONF_PORT]
-        #self._use_home = entry.options.get(CONF_USE_HOME, False)
-        self._use_home = entry.options.get(CONF_USE_HOME, entry.data.get(CONF_USE_HOME, False))
+        # self._use_home = entry.options.get(CONF_USE_HOME, False)
+        self._use_home = entry.options.get(
+            CONF_USE_HOME, entry.data.get(CONF_USE_HOME, False)
+        )
 
         self._api: Freepybox = None
         self.name = None
@@ -99,16 +104,16 @@ class FreeboxRouter:
             _LOGGER.exception("Failed to connect to Freebox")
             return ConfigEntryNotReady
 
-
-        #except AuthorizationError:
+        # except AuthorizationError:
         #    _LOGGER.exception("Failed to connect to Freebox (AuthorizationError). Please retry")
         #    await reset_api(self.hass, self._host)
         #    return ConfigEntryNotReady
 
         # Devices & sensors
         await self.update_all()
-        self._unsub_dispatcher = async_track_time_interval(self.hass, self.update_all, SCAN_INTERVAL)
-
+        self._unsub_dispatcher = async_track_time_interval(
+            self.hass, self.update_all, SCAN_INTERVAL
+        )
 
     async def update_all(self, now: datetime | None = None) -> None:
         """Update all Freebox platforms."""
@@ -198,9 +203,18 @@ class FreeboxRouter:
             return
 
         for home_node in home_nodes:
-            if( home_node["category"] not in ["pir","camera","alarm","dws","kfb","basic_shutter", "opener", "shutter"] ):
-                if( self._warning_once == False ):
-                    _LOGGER.warning("Node not supported:\n" +str(home_node))
+            if home_node["category"] not in [
+                "pir",
+                "camera",
+                "alarm",
+                "dws",
+                "kfb",
+                "basic_shutter",
+                "opener",
+                "shutter",
+            ]:
+                if self._warning_once == False:
+                    _LOGGER.warning("Node not supported:\n" + str(home_node))
                 continue
 
             if self.home_devices.get(home_node["id"]) is None:
@@ -208,8 +222,8 @@ class FreeboxRouter:
             self.home_devices[home_node["id"]] = home_node
 
         self._warning_once = True
-        
-        async_dispatcher_send(self.hass,  self.signal_home_device_update)
+
+        async_dispatcher_send(self.hass, self.signal_home_device_update)
 
         if new_device:
             async_dispatcher_send(self.hass, self.signal_home_device_new)
@@ -229,7 +243,6 @@ class FreeboxRouter:
 
         if self._option_listener is not None:
             self._option_listener()
-
 
     @property
     def device_info(self) -> DeviceInfo:

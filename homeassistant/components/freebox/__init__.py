@@ -8,7 +8,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT, EVENT_HOMEASSISTANT_STOP
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 
-from .const import DOMAIN, PLATFORMS, SERVICE_REBOOT, CONF_USE_HOME
+from .const import CONF_USE_HOME, DOMAIN, PLATFORMS, SERVICE_REBOOT
 from .router import FreeboxRouter
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ FREEBOX_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): cv.string,
         vol.Required(CONF_PORT): cv.port,
-        vol.Optional(CONF_USE_HOME, default=False): cv.boolean
+        vol.Optional(CONF_USE_HOME, default=False): cv.boolean,
     }
 )
 
@@ -28,6 +28,7 @@ CONFIG_SCHEMA = vol.Schema(
     ),
     extra=vol.ALLOW_EXTRA,
 )
+
 
 async def async_setup(hass, config):
     """Set up the Freebox integration."""

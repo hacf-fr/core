@@ -19,7 +19,15 @@ APP_DESC = {
 }
 API_VERSION = "v6"
 
-PLATFORMS = ["device_tracker", "sensor", "switch", "cover" , "alarm_control_panel", "camera", "binary_sensor"]
+PLATFORMS = [
+    "device_tracker",
+    "sensor",
+    "switch",
+    "cover",
+    "alarm_control_panel",
+    "camera",
+    "binary_sensor",
+]
 
 DEFAULT_DEVICE_NAME = "Unknown device"
 
@@ -99,10 +107,9 @@ VALUE_NOT_SET = -1
 CONF_HAS_HOME = "has_home_api"
 CONF_USE_HOME = "use_home_api"
 
-PERMISSION_DEFAULT  = 1
-PERMISSION_HOME     = 2
+PERMISSION_DEFAULT = 1
+PERMISSION_HOME = 2
 
 STATUS_PERMISSION_ERROR = 0
-STATUS_OK               = 1
-STATUS_HAS_HOME         = 2
-
+STATUS_OK = 1
+STATUS_HAS_HOME = 2
