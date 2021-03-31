@@ -194,10 +194,10 @@ class FreeboxRouter:
             self.disks[fbx_disk["id"]] = fbx_disk
 
     async def update_home_devices(self) -> None:
-        """Update Home devices (light,cover,alarm,detectors...)"""
+        """Update Home devices (light,cover,alarm,detectors...)."""
         new_device = False
         try:
-            home_nodes: Dict[str, Any] = await self._api.home.get_home_nodes()
+            home_nodes: dict[str, Any] = await self._api.home.get_home_nodes()
         except InsufficientPermissionsError as error:
             _LOGGER.warning("Home access is not granted")
             return
@@ -213,7 +213,7 @@ class FreeboxRouter:
                 "opener",
                 "shutter",
             ]:
-                if self._warning_once == False:
+                if self._warning_once is False:
                     _LOGGER.warning("Node not supported:\n" + str(home_node))
                 continue
 

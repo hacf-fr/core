@@ -1,11 +1,8 @@
 """Support for detectors covers."""
-import asyncio
 from datetime import datetime, timedelta
 import logging
 from typing import Dict, Optional
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_time_interval

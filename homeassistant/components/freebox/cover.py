@@ -1,8 +1,6 @@
 """Support for Freebox covers."""
 import base64
-import json
 import logging
-import time
 
 from homeassistant.components.cover import (
     ATTR_CURRENT_POSITION,
@@ -65,7 +63,7 @@ def add_entities(hass, router, async_add_entities, tracked):
 
 class FreeboxBasicShutter(FreeboxHomeBaseClass, CoverEntity):
     def __init__(self, hass, router, node) -> None:
-        """Initialize a Cover"""
+        """Initialize a Cover."""
         super().__init__(hass, router, node)
         self._command_up = self.get_command_id(node["show_endpoints"], "slot", "up")
         self._command_stop = self.get_command_id(node["show_endpoints"], "slot", "stop")
@@ -104,7 +102,7 @@ class FreeboxBasicShutter(FreeboxHomeBaseClass, CoverEntity):
         await self.async_set_value("signal", "state", None)
 
     async def async_update_node(self):
-        """Update state"""
+        """Update state."""
         self._state = self.convert_state(self.get_value("signal", "state"))
 
     def convert_state(self, state):
@@ -118,7 +116,7 @@ class FreeboxBasicShutter(FreeboxHomeBaseClass, CoverEntity):
 
 class FreeboxShutter(FreeboxHomeBaseClass, CoverEntity):
     def __init__(self, hass, router, node) -> None:
-        """Initialize a Cover"""
+        """Initialize a Cover."""
         # For the dev I got
         # DEVICE_CLASS_SHUTTER  = RTS
         # DEVICE_CLASS_GARAGE   = IOHome

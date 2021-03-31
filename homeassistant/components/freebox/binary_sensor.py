@@ -1,5 +1,4 @@
-"""Support for motion detector, door opener detector and check for sensor plastic cover """
-import asyncio
+"""Support for motion detector, door opener detector and check for sensor plastic cover."""
 from datetime import datetime, timedelta
 import logging
 from typing import Dict, Optional
@@ -13,10 +12,9 @@ from homeassistant.components.binary_sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.event import async_track_time_interval
 
 from .base_class import FreeboxHomeBaseClass
-from .const import DOMAIN, VALUE_NOT_SET
+from .const import DOMAIN
 from .router import FreeboxRouter
 
 _LOGGER = logging.getLogger(__name__)
@@ -122,7 +120,7 @@ class FreeboxDws(FreeboxPir):
 
 class FreeboxSensorCover(FreeboxHomeBaseClass, BinarySensorEntity):
     def __init__(self, hass, router: FreeboxRouter, node: Dict[str, any]) -> None:
-        """Initialize a Cover for another Device"""
+        """Initialize a Cover for another Device."""
         # Get cover node
         cover_node = next(
             filter(

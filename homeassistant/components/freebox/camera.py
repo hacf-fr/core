@@ -1,8 +1,4 @@
-import asyncio
-import collections
-import json
 import logging
-from typing import Dict
 
 import aiohttp
 import async_timeout
