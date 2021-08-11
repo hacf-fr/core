@@ -110,12 +110,12 @@ class FreeboxFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="link", errors=errors)
 
     async def async_step_option_home(self, user_input=None):
-        """ Check if the user wants to use the Home API """
+        """Check if the user wants to use the Home API."""
         if user_input is None:
             return self.async_show_form(step_id="link")
 
         self._use_home = user_input[CONF_USE_HOME]
-        if self._use_home == False:
+        if self._use_home is False:
             return self.async_create_entry(
                 title=self._host,
                 data={
@@ -174,7 +174,7 @@ class FreeboxOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def async_step_init(self, user_input=None):
-        """ Check if the user wants to use the Home API """
+        """Check if the user wants to use the Home API."""
 
         if not self._has_home:
             return self.async_create_entry(
@@ -184,7 +184,7 @@ class FreeboxOptionsFlowHandler(config_entries.OptionsFlow):
         errors = {}
         if user_input is not None:
             self._use_home = user_input[CONF_USE_HOME]
-            if self._use_home == False:
+            if self._use_home is False:
                 return self.async_create_entry(title="", data=user_input)
             if await check_freebox_permission(
                 self.hass, self._host, self._port, PERMISSION_HOME, errors
@@ -208,6 +208,7 @@ class FreeboxOptionsFlowHandler(config_entries.OptionsFlow):
 
 
 async def check_freebox_permission(hass, host, port, check_type, errors={}, loop=True):
+    """Check if the user has the right to access an API."""
     fbx = await get_api(hass, host)
     try:
         await fbx.open(host, port)
@@ -229,7 +230,7 @@ async def check_freebox_permission(hass, host, port, check_type, errors={}, loop
         # We must remove the existing config file and do a single connection retry
         # It's necessary when the user remove the application into the freebox UI => we must setup a new access
         await reset_api(hass, host)
-        if loop == True:
+        if loop is True:
             return await check_freebox_permission(
                 hass, host, port, check_type, errors, False
             )
@@ -238,8 +239,9 @@ async def check_freebox_permission(hass, host, port, check_type, errors={}, loop
 
     except InsufficientPermissionsError as error:
         errors["base"] = "insufficient_permission"
+        _LOGGER.warning("Insufficient API permission. %s", error)
 
-    except HttpRequestError:
+    except HttpRequestError as error:
         _LOGGER.error(
             "Error connecting to the Freebox router at %s:%s. %s",
             host,

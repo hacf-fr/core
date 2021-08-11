@@ -1,4 +1,4 @@
-"""Support for Freebox Delta, Revolution and Mini 4K."""
+"""Support for Freebox switches."""
 from __future__ import annotations
 
 import logging
@@ -19,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ) -> None:
-    """Set up the switch."""
+    """Set up switches."""
     router = hass.data[DOMAIN][entry.unique_id]
     async_add_entities([FreeboxWifiSwitch(router)], True)
 

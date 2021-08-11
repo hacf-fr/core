@@ -1,4 +1,4 @@
-"""Support for Freebox devices (Freebox v6 and Freebox mini 4K)."""
+"""Support for Freebox sensors."""
 from __future__ import annotations
 
 import logging
@@ -36,7 +36,7 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ) -> None:
-    """Set up the sensors."""
+    """Set up sensors."""
     router = hass.data[DOMAIN][entry.unique_id]
     entities = []
     tracked = set()
@@ -92,7 +92,7 @@ async def async_setup_entry(
 
 @callback
 def add_entities(hass, router, async_add_entities, tracked):
-    """Add new home devices with battery from the router."""
+    """Add new sensors from the router."""
     new_tracked = []
 
     for nodeId, node in router.home_devices.items():
@@ -106,7 +106,7 @@ def add_entities(hass, router, async_add_entities, tracked):
             ),
             None,
         )
-        if battery_node != None and battery_node.get("value", None) != None:
+        if battery_node and battery_node.get("value") is not None:
             new_tracked.append(FreeboxBatterySensor(hass, router, node, battery_node))
 
         tracked.add(nodeId)
@@ -231,23 +231,25 @@ class FreeboxCallSensor(FreeboxSensor):
 
 
 class FreeboxBatterySensor(FreeboxHomeBaseClass):
+    """Representation of a Freebox battery sensor."""
+
     def __init__(self, hass, router, node, sub_node) -> None:
-        """Initialize a Pir"""
+        """Initialize a Freebox battery sensor."""
         super().__init__(hass, router, node, sub_node)
 
     @property
     def device_class(self):
-        """Return the devices' state attributes."""
+        """Return the device_class."""
         return DEVICE_CLASS_BATTERY
 
     @property
     def state(self):
-        """Return the current state of the device."""
+        """Return the state."""
         return self.get_value("signal", "battery")
 
     @property
     def unit_of_measurement(self):
-        """Return the unit_of_measurement of the device."""
+        """Return the unit."""
         return PERCENTAGE
 
 

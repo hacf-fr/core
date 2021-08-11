@@ -1,50 +1,27 @@
+"""Support for Freebox cameras."""
 import logging
 
-import aiohttp
-import async_timeout
-
-from homeassistant.components.camera import (
-    DEFAULT_CONTENT_TYPE,
-    PLATFORM_SCHEMA,
-    SUPPORT_ON_OFF,
-    SUPPORT_STREAM,
-    Camera,
-)
+from homeassistant.components.camera import SUPPORT_STREAM
 from homeassistant.components.ffmpeg.camera import (
     CONF_EXTRA_ARGUMENTS,
     CONF_INPUT,
     DEFAULT_ARGUMENTS,
     FFmpegCamera,
 )
-from homeassistant.components.generic.camera import (
-    CONF_CONTENT_TYPE,
-    CONF_FRAMERATE,
-    CONF_LIMIT_REFETCH_TO_URL_CHANGE,
-    CONF_STILL_IMAGE_URL,
-    CONF_STREAM_SOURCE,
-)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    CONF_AUTHENTICATION,
-    CONF_NAME,
-    CONF_PASSWORD,
-    CONF_USERNAME,
-    CONF_VERIFY_SSL,
-    HTTP_BASIC_AUTHENTICATION,
-    HTTP_DIGEST_AUTHENTICATION,
-)
+from homeassistant.const import CONF_NAME
 from homeassistant.core import callback
-from homeassistant.helpers import config_validation as cv, entity_platform, service
+from homeassistant.helpers import config_validation as entity_platform
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .base_class import FreeboxHomeBaseClass
-from .const import DOMAIN, VALUE_NOT_SET
-from .router import FreeboxRouter
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities) -> None:
+    """Set up cameras."""
     router = hass.data[DOMAIN][entry.unique_id]
     tracked = set()
 
@@ -67,7 +44,7 @@ async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities) -> Non
 
 @callback
 def add_entities(hass, router, async_add_entities, tracked):
-    """Add new cover from the router."""
+    """Add new cameras from the router."""
     new_tracked = []
 
     for nodeId, node in router.home_devices.items():
@@ -81,6 +58,8 @@ def add_entities(hass, router, async_add_entities, tracked):
 
 
 class FreeboxCamera(FreeboxHomeBaseClass, FFmpegCamera):
+    """Representation of a Freebox camera."""
+
     def __init__(self, hass, router, node):
         """Initialize a camera."""
 
@@ -101,7 +80,8 @@ class FreeboxCamera(FreeboxHomeBaseClass, FFmpegCamera):
 
         self.update_node()
 
-    async def async_flip(entity):
+    async def async_flip(self, entity: "FreeboxCamera"):
+        """Flip the camera stream."""
         entity._flip = not entity._flip
         await entity.set_home_endpoint_value(
             entity._command_flip, {"value": entity._flip}
@@ -150,9 +130,11 @@ class FreeboxCamera(FreeboxHomeBaseClass, FFmpegCamera):
         return self._supported_features
 
     async def async_update_node(self):
+        """Update the camera node."""
         self.update_node()
 
     def update_node(self):
+        """Update the camera node."""
 
         # Get status
         if self._node["status"] == "active":

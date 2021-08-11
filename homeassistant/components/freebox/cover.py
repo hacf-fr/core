@@ -3,7 +3,6 @@ import base64
 import logging
 
 from homeassistant.components.cover import (
-    ATTR_CURRENT_POSITION,
     ATTR_POSITION,
     DEVICE_CLASS_AWNING,
     DEVICE_CLASS_GARAGE,
@@ -15,7 +14,7 @@ from homeassistant.components.cover import (
     CoverEntity,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import STATE_CLOSED, STATE_CLOSING, STATE_OPEN, STATE_OPENING
+from homeassistant.const import STATE_CLOSED, STATE_OPEN
 from homeassistant.core import callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
@@ -26,6 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities) -> None:
+    """Set up covers."""
     router = hass.data[DOMAIN][entry.unique_id]
     tracked = set()
 
@@ -41,7 +41,7 @@ async def async_setup_entry(hass, entry: ConfigEntry, async_add_entities) -> Non
 
 @callback
 def add_entities(hass, router, async_add_entities, tracked):
-    """Add new Alarm Control Panel from the router."""
+    """Add new covers from the router."""
     new_tracked = []
 
     for nodeId, node in router.home_devices.items():
@@ -53,17 +53,16 @@ def add_entities(hass, router, async_add_entities, tracked):
         elif node["category"] == "shutter" or node["category"] == "opener":
             new_tracked.append(FreeboxShutter(hass, router, node))
             tracked.add(nodeId)
-        elif node["category"] == "opener":
-            new_tracked.append(FreeboxOpener(hass, router, node))
-            tracked.add(nodeId)
 
     if new_tracked:
         async_add_entities(new_tracked, True)
 
 
 class FreeboxBasicShutter(FreeboxHomeBaseClass, CoverEntity):
+    """Representation of a Freebox cover."""
+
     def __init__(self, hass, router, node) -> None:
-        """Initialize a Cover."""
+        """Initialize a cover."""
         super().__init__(hass, router, node)
         self._command_up = self.get_command_id(node["show_endpoints"], "slot", "up")
         self._command_stop = self.get_command_id(node["show_endpoints"], "slot", "stop")
@@ -75,6 +74,7 @@ class FreeboxBasicShutter(FreeboxHomeBaseClass, CoverEntity):
 
     @property
     def device_class(self) -> str:
+        """Return the device_class."""
         return DEVICE_CLASS_SHUTTER
 
     @property
@@ -106,6 +106,7 @@ class FreeboxBasicShutter(FreeboxHomeBaseClass, CoverEntity):
         self._state = self.convert_state(self.get_value("signal", "state"))
 
     def convert_state(self, state):
+        """Convert state."""
         if state:
             return STATE_CLOSED
         elif state is not None:
@@ -115,8 +116,10 @@ class FreeboxBasicShutter(FreeboxHomeBaseClass, CoverEntity):
 
 
 class FreeboxShutter(FreeboxHomeBaseClass, CoverEntity):
+    """Representation of a Freebox cover."""
+
     def __init__(self, hass, router, node) -> None:
-        """Initialize a Cover."""
+        """Initialize a cover."""
         # For the dev I got
         # DEVICE_CLASS_SHUTTER  = RTS
         # DEVICE_CLASS_GARAGE   = IOHome
@@ -146,6 +149,7 @@ class FreeboxShutter(FreeboxHomeBaseClass, CoverEntity):
 
     @property
     def device_class(self) -> str:
+        """Return the device_class."""
         return self._device_class
 
     @property
@@ -155,7 +159,8 @@ class FreeboxShutter(FreeboxHomeBaseClass, CoverEntity):
 
     @property
     def current_cover_position(self):
-        """Return current position of cover.
+        """Return the current position of the roller blind.
+
         None is unknown, 0 is closed, 100 is fully open.
         """
         return self._current_position
@@ -197,7 +202,7 @@ class FreeboxShutter(FreeboxHomeBaseClass, CoverEntity):
         self.async_write_ha_state()
 
     def update_current_position(self):
-        """ Set the current position """
+        """Set the current position."""
         # Parse current status
         state = self.get_value("signal", "state")
         position_set = self.get_value("signal", "position_set")
@@ -243,4 +248,5 @@ class FreeboxShutter(FreeboxHomeBaseClass, CoverEntity):
         )
 
     async def async_update_node(self):
+        """Update node."""
         self.update_current_position()

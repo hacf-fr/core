@@ -48,7 +48,7 @@ async def get_api(hass: HomeAssistant, host: str) -> Freepybox:
     return Freepybox(APP_DESC, token_file, API_VERSION)
 
 
-async def reset_api(hass: HomeAssistantType, host: str):
+async def reset_api(hass: HomeAssistant, host: str):
     """Delete the config file to be able to restart a new pairing process."""
     freebox_path = hass.helpers.storage.Store(STORAGE_VERSION, STORAGE_KEY).path
     token_file = Path(f"{freebox_path}/{slugify(host)}.conf")
@@ -64,7 +64,6 @@ class FreeboxRouter:
         self._entry = entry
         self._host = entry.data[CONF_HOST]
         self._port = entry.data[CONF_PORT]
-        # self._use_home = entry.options.get(CONF_USE_HOME, False)
         self._use_home = entry.options.get(
             CONF_USE_HOME, entry.data.get(CONF_USE_HOME, False)
         )
@@ -194,11 +193,11 @@ class FreeboxRouter:
             self.disks[fbx_disk["id"]] = fbx_disk
 
     async def update_home_devices(self) -> None:
-        """Update Home devices (light,cover,alarm,detectors...)."""
+        """Update Home devices (light, cover, alarm, sensors ...)."""
         new_device = False
         try:
             home_nodes: dict[str, Any] = await self._api.home.get_home_nodes()
-        except InsufficientPermissionsError as error:
+        except InsufficientPermissionsError:
             _LOGGER.warning("Home access is not granted")
             return
 

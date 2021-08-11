@@ -1,4 +1,4 @@
-"""Support for Freebox devices (Freebox v6 and Freebox mini 4K)."""
+"""Support for Freebox device trackers."""
 from __future__ import annotations
 
 from datetime import datetime
@@ -19,7 +19,7 @@ from .router import FreeboxRouter
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ) -> None:
-    """Set up device tracker for Freebox component."""
+    """Set up device trackers."""
     router = hass.data[DOMAIN][entry.unique_id]
     tracked = set()
 
@@ -37,7 +37,7 @@ async def async_setup_entry(
 
 @callback
 def add_entities(router, async_add_entities, tracked):
-    """Add new tracker entities from the router."""
+    """Add new device trackers from the router."""
     new_tracked = []
 
     for mac, device in router.devices.items():
