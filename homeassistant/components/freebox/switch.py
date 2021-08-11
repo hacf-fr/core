@@ -27,7 +27,7 @@ async def async_setup_entry(
         await router.connection.get_lte_config()
         entities.append(FreeboxLteSwitch(router))
     except HttpRequestError:
-        _LOGGER.warning("No 4G module detected")
+        _LOGGER.info("No 4G module detected")
 
     async_add_entities(entities, True)
 
