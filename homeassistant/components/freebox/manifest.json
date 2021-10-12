@@ -4,7 +4,7 @@
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/freebox",
   "requirements": ["freebox-api==0.0.10"],
-  "dependencies": ["ffmpeg", "generic"],
+  "dependencies": ["ffmpeg"],
   "zeroconf": ["_fbx-api._tcp.local."],
   "codeowners": ["@hacf-fr", "@Quentame", "@gvigroux"],
   "iot_class": "local_polling"

@@ -131,21 +131,21 @@ class FreeboxAlarm(FreeboxHomeBaseClass, AlarmControlPanelEntity):
         """Send disarm command."""
         if await self.set_home_endpoint_value(self._command_off):
             self._state = STATE_ALARM_DISARMED
-            self.start_watcher(timedelta(seconds=1))
+            """self.start_watcher(timedelta(seconds=1))"""
             self.async_write_ha_state()
 
     async def async_alarm_arm_away(self, code=None) -> None:
         """Send arm away command."""
         if await self.set_home_endpoint_value(self._command_alarm1):
             self._state = STATE_ALARM_ARMING
-            self.start_watcher(timedelta(seconds=self._timeout1 + 1))
+            """self.start_watcher(timedelta(seconds=self._timeout1 + 1))"""
             self.async_write_ha_state()
 
     async def async_alarm_arm_night(self, code=None) -> None:
         """Send arm night command."""
         if await self.set_home_endpoint_value(self._command_alarm2):
             self._state = STATE_ALARM_ARMING
-            self.start_watcher(timedelta(seconds=self._timeout1 + 1))
+            """self.start_watcher(timedelta(seconds=self._timeout1 + 1))"""
             self.async_write_ha_state()
 
     async def async_watcher(self, now: Optional[datetime] = None) -> None:

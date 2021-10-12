@@ -10,6 +10,7 @@ from homeassistant.const import (
 
 DOMAIN = "freebox"
 SERVICE_REBOOT = "reboot"
+VALUE_NOT_SET = ""
 
 APP_DESC = {
     "app_id": "hass",
@@ -26,7 +27,7 @@ PLATFORMS = [
     "cover",
     "alarm_control_panel",
     "camera",
-    "binary_sensor",
+    "binary_sensor"
 ]
 
 DEFAULT_DEVICE_NAME = "Unknown device"

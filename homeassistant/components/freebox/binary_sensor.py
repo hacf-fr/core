@@ -74,7 +74,7 @@ class FreeboxPir(FreeboxHomeBaseClass, BinarySensorEntity):
             node["type"]["endpoints"], "signal", "trigger"
         )
         self._detection = False
-        self.start_watcher(timedelta(seconds=2))
+        """self.start_watcher(timedelta(seconds=2))"""
         self._had_timeout = False
 
     async def async_watcher(self, now: Optional[datetime] = None) -> None:
