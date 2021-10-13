@@ -4,6 +4,8 @@ from typing import Dict
 
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.event import async_track_time_interval
+from datetime import datetime, timedelta
 
 from .const import DOMAIN, VALUE_NOT_SET
 from .router import FreeboxRouter
@@ -52,6 +54,15 @@ class FreeboxHomeBaseClass(Entity):
         elif node["type"].get("inherit") == "node::ios":
             self._manufacturer = "Somfy"
             self._model = "IOHome"
+
+    def start_watcher(self, timedelta=timedelta(seconds=1)):
+         self._watcher = async_track_time_interval(self._hass, self.async_watcher, timedelta)
+
+    def stop_watcher(self):
+         if( self._watcher != None ):
+             self._watcher()
+             self._watcher = None
+
 
     @property
     def unique_id(self) -> str:

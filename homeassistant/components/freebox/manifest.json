@@ -1,6 +1,7 @@
 {
   "domain": "freebox",
   "name": "Freebox",
+  "version": "1.15",
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/freebox",
   "requirements": ["freebox-api==0.0.10"],

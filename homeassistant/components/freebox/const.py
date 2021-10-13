@@ -10,7 +10,7 @@ from homeassistant.const import (
 
 DOMAIN = "freebox"
 SERVICE_REBOOT = "reboot"
-VALUE_NOT_SET = ""
+VALUE_NOT_SET = None
 
 APP_DESC = {
     "app_id": "hass",
