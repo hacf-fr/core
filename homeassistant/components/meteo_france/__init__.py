@@ -1,6 +1,7 @@
 """Support for Meteo-France weather data."""
 from datetime import timedelta
 import logging
+from typing import Any, Dict
 
 from meteofrance_api.client import MeteoFranceClient
 from meteofrance_api.helpers import is_valid_warning_department
@@ -64,28 +65,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     latitude = entry.data[CONF_LATITUDE]
     longitude = entry.data[CONF_LONGITUDE]
 
-    async def _async_update_data_forecast_forecast():
-        """Fetch data from API endpoint."""
-        return await hass.async_add_executor_job(
-            client.get_forecast, latitude, longitude
-        )
-
-    async def _async_update_data_rain():
-        """Fetch data from API endpoint."""
-        return await hass.async_add_executor_job(client.get_rain, latitude, longitude)
-
     async def _async_update_data_alert():
         """Fetch data from API endpoint."""
         return await hass.async_add_executor_job(
             client.get_warning_current_phenomenoms, department, 0, True
         )
 
-    coordinator_forecast = DataUpdateCoordinator(
-        hass,
-        _LOGGER,
-        name=f"Météo-France forecast for city {entry.title}",
-        update_method=_async_update_data_forecast_forecast,
-        update_interval=SCAN_INTERVAL,
+    coordinator_forecast = MeteoFranceDataUpdateCoordinator(
+        hass, client, "Lyon", "69000", latitude, longitude
     )
     coordinator_rain = None
     coordinator_alert = None
@@ -98,12 +85,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Check if rain forecast is available.
     if coordinator_forecast.data.position.get("rain_product_available") == 1:
-        coordinator_rain = DataUpdateCoordinator(
-            hass,
-            _LOGGER,
-            name=f"Météo-France rain for city {entry.title}",
-            update_method=_async_update_data_rain,
-            update_interval=SCAN_INTERVAL_RAIN,
+        coordinator_rain = MeteoFranceRainDataUpdateCoordinator(
+            hass, client, "Lyon", "69000", latitude, longitude
         )
         await coordinator_rain.async_refresh()
 
@@ -189,3 +172,71 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry):
     """Handle options update."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+class MeteoFranceDataUpdateCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
+    """Class to manage fetching AccuWeather data API."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        client: MeteoFranceClient,
+        city_name: str,
+        city_zip: str,
+        latitude: float,
+        longitude: float,
+    ) -> None:
+        """Initialize."""
+        self.hass = hass
+        self.client = client
+        self.city_name = city_name
+        self.city_zip = city_zip
+        self.latitude = latitude
+        self.longitude = longitude
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"Météo-France forecast for city {city_name}",
+            update_interval=SCAN_INTERVAL,
+        )
+
+    async def _async_update_data(self) -> dict[str, Any]:
+        """Update data via library."""
+        return await self.hass.async_add_executor_job(
+            self.client.get_forecast, self.latitude, self.longitude
+        )
+
+
+class MeteoFranceRainDataUpdateCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
+    """Class to manage fetching AccuWeather data API."""
+
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        client: MeteoFranceClient,
+        city_name: str,
+        city_zip: str,
+        latitude: float,
+        longitude: float,
+    ) -> None:
+        """Initialize."""
+        self.hass = hass
+        self.client = client
+        self.city_name = city_name
+        self.city_zip = city_zip
+        self.latitude = latitude
+        self.longitude = longitude
+
+        super().__init__(
+            hass,
+            _LOGGER,
+            name=f"Météo-France rain for city {city_name}",
+            update_interval=SCAN_INTERVAL,
+        )
+
+    async def _async_update_data(self) -> dict[str, Any]:
+        """Update data via library."""
+        return await self.hass.async_add_executor_job(
+            self.client.get_rain, self.latitude, self.longitude
+        )

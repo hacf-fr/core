@@ -1,4 +1,6 @@
 """Support for Meteo-France raining forecast sensor."""
+from pprint import pprint
+
 from meteofrance_api.helpers import (
     get_warning_text_status_from_indice_color,
     readeable_phenomenoms_dict,
@@ -88,21 +90,21 @@ class MeteoFranceSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self.entity_description = description
         if hasattr(coordinator.data, "position"):
-            city_name = coordinator.data.position["name"]
-            self._attr_name = f"{city_name} {description.name}"
+            pprint("-TEST-")
+            print(coordinator.data.position)
+            self._attr_name = f"{coordinator.city_name} {description.name}"
             self._attr_unique_id = f"{coordinator.data.position['lat']},{coordinator.data.position['lon']}_{description.key}"
-        self._attr_extra_state_attributes = {ATTR_ATTRIBUTION: ATTRIBUTION}
 
-    @property
-    def device_info(self) -> DeviceInfo:
-        """Return the device info."""
-        return DeviceInfo(
-            entry_type=DeviceEntryType.SERVICE,
-            identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
-            manufacturer=MANUFACTURER,
-            model=MODEL,
-            name=self.coordinator.name,
-        )
+            self._attr_device_info = DeviceInfo(
+                configuration_url=f"https://meteofrance.com/previsions-meteo-france/{coordinator.city_name.lower().replace(' ', '-')}/{coordinator.city_zip}",
+                entry_type=DeviceEntryType.SERVICE,
+                identifiers={(DOMAIN, self.platform.config_entry.unique_id)},
+                manufacturer=MANUFACTURER,
+                model=MODEL,
+                name=self.coordinator.name,
+            )
+
+        self._attr_extra_state_attributes = {ATTR_ATTRIBUTION: ATTRIBUTION}
 
     @property
     def native_value(self):
@@ -168,6 +170,8 @@ class MeteoFranceAlertSensor(MeteoFranceSensor):
     ) -> None:
         """Initialize the Meteo-France sensor."""
         super().__init__(coordinator, description)
+        pprint("-TEST-ALERT-")
+        print(vars(coordinator.data))
         dept_code = self.coordinator.data.domain_id
         self._attr_name = f"{dept_code} {description.name}"
         self._attr_unique_id = self._attr_name
