@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Filter for core changes
         uses: dorny/paths-filter@v2.10.2
         id: core
@@ -134,7 +134,7 @@ jobs:
       pre-commit-key: ${{ steps.generate-pre-commit-key.outputs.key }}
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         id: python
         uses: actions/setup-python@v2.3.1
@@ -194,7 +194,7 @@ jobs:
       - prepare-base
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         uses: actions/setup-python@v2.3.1
         id: python
@@ -243,7 +243,7 @@ jobs:
       - prepare-base
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         uses: actions/setup-python@v2.3.1
         id: python
@@ -293,7 +293,7 @@ jobs:
     needs: prepare-base
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         uses: actions/setup-python@v2.3.1
         id: python
@@ -335,7 +335,7 @@ jobs:
       - prepare-base
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         uses: actions/setup-python@v2.3.1
         id: python
@@ -443,7 +443,7 @@ jobs:
     container: homeassistant/ci-azure:${{ matrix.python-version }}
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Restore full Python ${{ matrix.python-version }} virtual environment
         id: cache-venv
         uses: actions/cache@v2.1.7
@@ -467,7 +467,7 @@ jobs:
     needs: prepare-base
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         uses: actions/setup-python@v2.3.1
         id: python
@@ -501,7 +501,7 @@ jobs:
     container: homeassistant/ci-azure:${{ matrix.python-version }}
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Generate partial Python venv restore key
         id: generate-python-key
         run: >-
@@ -547,7 +547,7 @@ jobs:
     container: homeassistant/ci-azure:${{ matrix.python-version }}
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Restore full Python ${{ matrix.python-version }} virtual environment
         id: cache-venv
         uses: actions/cache@v2.1.7
@@ -587,7 +587,7 @@ jobs:
     container: homeassistant/ci-azure:${{ matrix.python-version }}
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Restore full Python ${{ matrix.python-version }} virtual environment
         id: cache-venv
         uses: actions/cache@v2.1.7
@@ -637,7 +637,7 @@ jobs:
     container: homeassistant/ci-azure:${{ matrix.python-version }}
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Restore full Python ${{ matrix.python-version }} virtual environment
         id: cache-venv
         uses: actions/cache@v2.1.7
@@ -728,7 +728,7 @@ jobs:
       - pytest
     steps:
       - name: Check out code from GitHub
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
       - name: Download all coverage artifacts
         uses: actions/download-artifact@v2
       - name: Upload coverage to Codecov (full coverage)
