@@ -92,7 +92,7 @@ jobs:
           name: requirements_diff
 
       - name: Build wheels
-        uses: home-assistant/wheels@2022.10.1
+        uses: home-assistant/wheels@2023.04.0
         with:
           abi: cp310
           tag: musllinux_1_2
@@ -160,7 +160,7 @@ jobs:
           sed -i "/numpy/d" homeassistant/package_constraints.txt
 
       - name: Build wheels
-        uses: home-assistant/wheels@2022.10.1
+        uses: home-assistant/wheels@2023.04.0
         with:
           abi: cp310
           tag: musllinux_1_2
