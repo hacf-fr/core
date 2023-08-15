@@ -14,5 +14,30 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_service%]"
     }
+  },
+  "entity": {
+    "sensor": {
+      "free_games": {
+        "name": "Free gaaames"
+      },
+      "next_free_games": {
+        "name": "Next free gaaames"
+      }
+    }
+  },
+  "entity_component": {
+    "_": {
+      "state_attributes": {
+        "start_at": {
+          "name": "Start aaaat"
+        },
+        "end_at": {
+          "name": "End aaaat"
+        },
+        "games": {
+          "name": "Gaaaames"
+        }
+      }
+    }
   }
 }

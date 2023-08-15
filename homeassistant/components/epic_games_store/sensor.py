@@ -22,12 +22,12 @@ SENSOR_DESCRIPTIONS: list[SensorEntityDescription] = [
     SensorEntityDescription(
         device_class=SensorDeviceClass.DATE,
         key="free_games",
-        name="Free games",
+        translation_key="free_games",
     ),
     SensorEntityDescription(
         device_class=SensorDeviceClass.DATE,
         key="next_free_games",
-        name="Next free games",
+        translation_key="next_free_games",
     ),
 ]
 
